@@ -1,4 +1,5 @@
-from pytorch_optimizer.optimizer import Amos, OrthoGrad
+from pytorch_optimizer.optimizer.amos import Amos
+from pytorch_optimizer.optimizer.orthograd import OrthoGrad
 
 class OrthoAmos(OrthoGrad):
     """
