@@ -8,6 +8,7 @@ from pytorch_optimizer.base.optimizer import BaseOptimizer
 from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup, State
 from pytorch_optimizer.optimizer.orthograd import OrthoGrad
 from pytorch_optimizer.optimizer.lookahead import Lookahead
+from pytorch_optimizer.optimizer.schedulefree import ScheduleFreeWrapper
 
 # Some optimizers want to work with `nn.Module`, but Kohya only provides raw parameter groups.
 KOHYA_INCOMPATIBLE = (
@@ -37,6 +38,8 @@ class KohyaHelper(BaseOptimizer):
         optimizer_name (str): Name of the optimizer; required.
         use_lookahead (bool): Wrap the optimizer with Lookahead.
         use_orthograd (bool): Wrap the optimizer with OrthoGrad.
+        use_schedulefree (bool): Wrap the optimizer with ScheduleFreeWrapper.
+        schedulefree_momentum (float): The momentum to use if using ScheduleFree.
     """
 
     def __init__(
@@ -46,6 +49,8 @@ class KohyaHelper(BaseOptimizer):
         optimizer_name: Optional[str] = None,
         use_lookahead: bool = False,
         use_orthograd: bool = False,
+        use_schedulefree: bool = False,
+        schedulefree_momentum: float = 0.9,
         **kwargs,
     ) -> None:
         from pytorch_optimizer.optimizer import create_optimizer, load_optimizer, OPTIMIZER
@@ -82,6 +87,11 @@ class KohyaHelper(BaseOptimizer):
 
             if use_orthograd:
                 optimizer = OrthoGrad(optimizer, **kwargs)
+            
+            if use_schedulefree:
+                # Make sure the explicit `momentum` is not accidentally overridden by `kwargs`.
+                filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'momentum'}
+                optimizer = ScheduleFreeWrapper(optimizer, momentum=schedulefree_momentum, **filtered_kwargs)
 
             if use_lookahead:
                 if optimizer_name in ('ranger', 'ranger21', 'ranger25'):
