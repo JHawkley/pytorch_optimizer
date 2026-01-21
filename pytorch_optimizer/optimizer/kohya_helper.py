@@ -31,7 +31,8 @@ class KohyaHelper(BaseOptimizer):
     and then passing them on to `create_optimizer` itself, wrapping the resulting optimizer.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (Parameters|Module): A Torch module, an iterable of parameters to optimize, or
+            dicts defining parameter groups.
         lr (float): Learning rate.
         optimizer_name (str): Name of the optimizer; required.
         use_lookahead (bool): Wrap the optimizer with Lookahead.
@@ -66,7 +67,7 @@ class KohyaHelper(BaseOptimizer):
             # In particular, `params[*]['lr']` is usually tossed away, breaking the feature
             # that allows the UNet and text encoder to have separate learning rates.
 
-            if optimizer_name in (KOHYA_INCOMPATIBLE):
+            if optimizer_name in KOHYA_INCOMPATIBLE:
                 raise ValueError(f'optimizer {optimizer_name} is incompatible with KohyaHelper')
 
             self._optimizer_step_pre_hooks: Dict[int, Callable] = {}
