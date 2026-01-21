@@ -554,7 +554,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
         self._optimizer_step_pre_hooks: Dict[int, Callable] = {}
         self._optimizer_step_post_hooks: Dict[int, Callable] = {}
 
-        self.state: State = defaultdict(dict)
+        self.state: State = {}
         self.defaults: Defaults = self.optimizer.defaults
 
     def __str__(self) -> str:
@@ -588,7 +588,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
 
         for group in self.param_groups:
             for p in group['params']:
-                state = self.state[p]
+                state = self.state.setdefault(p, {})
                 if 'z' in state:
                     p.lerp_(end=state['z'], weight=1.0 - 1.0 / self.momentum)
 
@@ -601,7 +601,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
 
         for group in self.param_groups:
             for p in group['params']:
-                state = self.state[p]
+                state = self.state.setdefault(p, {})
                 if 'z' in state:
                     p.lerp_(end=state['z'], weight=1.0 - self.momentum)
 
@@ -620,7 +620,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
             if grad.is_sparse:
                 raise NoSparseGradientError(str(self))
 
-            state = self.state[p]
+            state = self.state.setdefault(p, {})
 
             if 'z' not in state:
                 state['z'] = p.clone()

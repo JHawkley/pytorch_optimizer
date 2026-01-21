@@ -39,14 +39,14 @@ class Lookahead(BaseOptimizer):
         self.k = k
         self.pullback_momentum = pullback_momentum
 
-        self.state: State = defaultdict(dict)
+        self.state: State = {}
 
         for group in self.param_groups:
             if 'counter' not in group:
                 group['counter'] = 0
 
             for p in group['params']:
-                state = self.state[p]
+                state = self.state.setdefault(p, {})
                 state['slow_params'] = torch.empty_like(p)
                 state['slow_params'].copy_(p)
                 if self.pullback_momentum == 'pullback':
@@ -84,7 +84,7 @@ class Lookahead(BaseOptimizer):
         r"""Backup cache parameters."""
         for group in self.param_groups:
             for p in group['params']:
-                state = self.state[p]
+                state = self.state.setdefault(p, {})
                 state['backup_params'] = torch.empty_like(p)
                 state['backup_params'].copy_(p)
                 p.data.copy_(state['slow_params'])
@@ -93,7 +93,7 @@ class Lookahead(BaseOptimizer):
         r"""Load backup parameters."""
         for group in self.param_groups:
             for p in group['params']:
-                state = self.state[p]
+                state = self.state.setdefault(p, {})
                 p.data.copy_(state['backup_params'])
                 del state['backup_params']
 
@@ -111,7 +111,7 @@ class Lookahead(BaseOptimizer):
             if p.grad is None:
                 continue
 
-            state = self.state[p]
+            state = self.state.setdefault(p, {})
 
             slow = state['slow_params']
 
