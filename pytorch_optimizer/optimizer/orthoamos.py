@@ -8,15 +8,16 @@ class OrthoAmos(OrthoGrad):
     Simple application of OrthoGrad to Amos to make using it in Kohya_ss easier.
     """
 
-    def __init__(self, params: Parameters, lr: float = 1e-3, lookahead: bool = False, **kwargs) -> None:
-        # Extract Lookahead-specific parameters from kwargs
-        k = kwargs.pop('k', 5)
-        alpha = kwargs.pop('alpha', 0.5)
-        pullback_momentum = kwargs.pop('pullback_momentum', 'none')
-        
+    def __init__(self, params: Parameters, lr: float = 1e-3, use_lookahead: bool = False, **kwargs) -> None:
         optimizer = Amos(params, lr, **kwargs)
-        if lookahead:
-            optimizer = Lookahead(optimizer, k=k, alpha=alpha, pullback_momentum=pullback_momentum)
+        if use_lookahead:
+            optimizer = Lookahead(
+                optimizer,
+                k=kwargs.get('k', 5),
+                alpha=kwargs.get('alpha', 0.5),
+                pullback_momentum=kwargs.get('pullback_momentum', 'none'),
+            )
+
         super().__init__(optimizer)
 
     def __str__(self) -> str:
