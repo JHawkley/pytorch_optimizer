@@ -146,7 +146,6 @@ from pytorch_optimizer.optimizer import (
     NAdam,
     Nero,
     NovoGrad,
-    OrthoAmos,
     OrthoGrad,
     PAdam,
     PCGrad,

@@ -74,7 +74,6 @@ from pytorch_optimizer.optimizer.msvag import MSVAG
 from pytorch_optimizer.optimizer.muon import AdaGO, AdaMuon, DistributedMuon, Muon, prepare_muon_parameters
 from pytorch_optimizer.optimizer.nero import Nero
 from pytorch_optimizer.optimizer.novograd import NovoGrad
-from pytorch_optimizer.optimizer.orthoamos import OrthoAmos
 from pytorch_optimizer.optimizer.orthograd import OrthoGrad
 from pytorch_optimizer.optimizer.padam import PAdam
 from pytorch_optimizer.optimizer.pcgrad import PCGrad
@@ -200,7 +199,6 @@ OPTIMIZER_LIST: List[OPTIMIZER] = [
     Muon,
     Nero,
     NovoGrad,
-    OrthoAmos,
     PAdam,
     PID,
     PNM,
@@ -367,7 +365,7 @@ def create_optimizer(
     else:
         optimizer = optimizer_class(parameters, lr=lr, **kwargs)
 
-    if use_orthograd and optimizer_name != 'orthoamos':
+    if use_orthograd:
         optimizer = OrthoGrad(optimizer, **kwargs)
 
     if use_lookahead:
