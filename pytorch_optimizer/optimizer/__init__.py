@@ -61,6 +61,7 @@ from pytorch_optimizer.optimizer.grams import Grams
 from pytorch_optimizer.optimizer.gravity import Gravity
 from pytorch_optimizer.optimizer.grokfast import GrokFastAdamW
 from pytorch_optimizer.optimizer.kate import Kate
+from pytorch_optimizer.optimizer.kohya_helper import KohyaHelper
 from pytorch_optimizer.optimizer.lamb import Lamb
 from pytorch_optimizer.optimizer.laprop import LaProp
 from pytorch_optimizer.optimizer.lars import LARS

@@ -11,6 +11,7 @@ from pytorch_optimizer import (
     WSAM,
     CosineScheduler,
     FriendlySAM,
+    KohyaHelper,
     Lookahead,
     LookSAM,
     OrthoGrad,
@@ -247,3 +248,154 @@ def test_load_wrapper_optimizer(wrapper_optimizer_instance):
 
     state = optimizer.state_dict()
     optimizer.load_state_dict(state)
+
+
+def test_kohya_helper_basic(environment):
+    """Test basic KohyaHelper functionality with a simple optimizer."""
+    x_data, y_data = environment
+    model, loss_fn = build_model()
+    
+    # Test with raw parameters
+    optimizer = KohyaHelper(
+        model.parameters(),
+        lr=1e-2,
+        optimizer_name='adamw',
+    )
+    
+    trainer = Trainer(model, loss_fn, optimizer, x_data, y_data)
+    trainer.run(iterations=5, threshold=1)
+
+
+def test_kohya_helper_with_model(environment):
+    """Test KohyaHelper when passing a model directly."""
+    x_data, y_data = environment
+    model, loss_fn = build_model()
+    
+    # Test with model as first argument (as nn.Module)
+    optimizer = KohyaHelper(
+        model,
+        lr=1e-2,
+        optimizer_name='adamw',
+    )
+    
+    trainer = Trainer(model, loss_fn, optimizer, x_data, y_data)
+    trainer.run(iterations=5, threshold=1)
+
+
+@pytest.mark.parametrize('use_lookahead', [True, False])
+@pytest.mark.parametrize('use_orthograd', [True, False])
+def test_kohya_helper_with_wrappers(use_lookahead, use_orthograd, environment):
+    """Test KohyaHelper with lookahead and orthograd wrappers."""
+    x_data, y_data = environment
+    model, loss_fn = build_model()
+    
+    optimizer = KohyaHelper(
+        model.parameters(),
+        lr=1e-2,
+        optimizer_name='adamw',
+        use_lookahead=use_lookahead,
+        use_orthograd=use_orthograd,
+    )
+    
+    trainer = Trainer(model, loss_fn, optimizer, x_data, y_data)
+    trainer.run(iterations=5, threshold=1)
+
+
+def test_kohya_helper_error_missing_optimizer_name():
+    """Test that KohyaHelper raises error when optimizer_name is missing."""
+    model = Example()
+    
+    with pytest.raises(ValueError, match='optimizer_name must be provided'):
+        KohyaHelper(model.parameters(), lr=1e-2, optimizer_name=None)
+
+
+def test_kohya_helper_properties():
+    """Test KohyaHelper properties and methods."""
+    model = Example()
+    
+    optimizer = KohyaHelper(
+        model.parameters(),
+        lr=1e-2,
+        optimizer_name='adamw',
+    )
+    
+    # Test properties
+    _ = optimizer.param_groups
+    _ = optimizer.state
+    _ = optimizer.defaults
+    
+    # Test string representation
+    assert str(optimizer) == 'KohyaHelper[AdamW]'
+    
+    # Test state dict methods
+    state = optimizer.state_dict()
+    optimizer.load_state_dict(state)
+    
+    # Test zero_grad
+    optimizer.zero_grad()
+    
+    # Test init_group (should not raise)
+    optimizer.init_group({})
+
+
+def test_kohya_helper_with_parameter_groups():
+    """Test KohyaHelper with parameter groups."""
+    model = Example()
+    
+    # Create parameter groups
+    param_groups = [
+        {'params': model.fc1.parameters(), 'lr': 1e-3},
+        {'params': model.norm1.parameters(), 'lr': 1e-4},
+    ]
+    
+    optimizer = KohyaHelper(
+        param_groups,
+        lr=1e-2,  # lr will be overridden by group lrs
+        optimizer_name='adamw',
+    )
+    
+    # Should work without errors
+    optimizer.zero_grad()
+
+
+@pytest.mark.parametrize('special_optimizer', ['adammini', 'muon', 'adamuon', 'adago'])
+def test_kohya_helper_model_first_optimizers(special_optimizer, environment):
+    """Test KohyaHelper with optimizers that require model as first argument."""
+    x_data, y_data = environment
+    model, loss_fn = build_model()
+    
+    # Muon optimizers have special parameter preparation
+    # They should work with KohyaHelper's DummyModule
+    optimizer = KohyaHelper(
+        model.parameters(),
+        lr=1e-2,
+        optimizer_name=special_optimizer,
+    )
+    
+    # Should create optimizer without errors
+    assert optimizer is not None
+    
+    # Try to run a step
+    trainer = Trainer(model, loss_fn, optimizer, x_data, y_data)
+    trainer.run(iterations=5, threshold=1)
+
+
+@pytest.mark.parametrize('lomo_optimizer', ['lomo', 'adalomo'])
+def test_kohya_helper_lomo_optimizers(lomo_optimizer, environment):
+    """Test KohyaHelper with LOMO family optimizers."""
+    model, _ = build_model()
+    
+    # These optimizers expect model as first argument, not parameters
+    # KohyaHelper's DummyModule should handle this
+    optimizer = KohyaHelper(
+        model.parameters(),
+        lr=1e-2,
+        optimizer_name=lomo_optimizer,
+    )
+    
+    # Should create optimizer without errors
+    assert optimizer is not None
+    
+    # LOMO optimizers don't implement step() method and require special training workflow
+    # We only test that the optimizer can be created, not that it can run training steps
+    # This is consistent with how LOMO is tested in test_optimizers.py
