@@ -358,44 +358,15 @@ def test_kohya_helper_with_parameter_groups():
     optimizer.zero_grad()
 
 
-@pytest.mark.parametrize('special_optimizer', ['adammini', 'muon', 'adamuon', 'adago'])
+@pytest.mark.parametrize('special_optimizer', ['adammini', 'muon', 'adamuon', 'adago', 'lomo', 'adalomo'])
 def test_kohya_helper_model_first_optimizers(special_optimizer, environment):
     """Test KohyaHelper with optimizers that require model as first argument."""
     x_data, y_data = environment
     model, loss_fn = build_model()
     
-    # Muon optimizers have special parameter preparation
-    # They should work with KohyaHelper's DummyModule
-    optimizer = KohyaHelper(
-        model.parameters(),
-        lr=1e-2,
-        optimizer_name=special_optimizer,
-    )
-    
-    # Should create optimizer without errors
-    assert optimizer is not None
-    
-    # Try to run a step
-    trainer = Trainer(model, loss_fn, optimizer, x_data, y_data)
-    trainer.run(iterations=5, threshold=1)
-
-
-@pytest.mark.parametrize('lomo_optimizer', ['lomo', 'adalomo'])
-def test_kohya_helper_lomo_optimizers(lomo_optimizer, environment):
-    """Test KohyaHelper with LOMO family optimizers."""
-    model, _ = build_model()
-    
-    # These optimizers expect model as first argument, not parameters
-    # KohyaHelper's DummyModule should handle this
-    optimizer = KohyaHelper(
-        model.parameters(),
-        lr=1e-2,
-        optimizer_name=lomo_optimizer,
-    )
-    
-    # Should create optimizer without errors
-    assert optimizer is not None
-    
-    # LOMO optimizers don't implement step() method and require special training workflow
-    # We only test that the optimizer can be created, not that it can run training steps
-    # This is consistent with how LOMO is tested in test_optimizers.py
+    with pytest.raises(ValueError, match='incompatible with KohyaHelper'):
+        KohyaHelper(
+            model.parameters(),
+            lr=1e-2,
+            optimizer_name=special_optimizer,
+        )

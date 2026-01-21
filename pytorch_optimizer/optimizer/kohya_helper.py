@@ -1,12 +1,23 @@
-from typing import Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional, Union
+from warnings import warn
 
 import torch
 import torch.nn as nn
-from torch.optim import Optimizer
 
 from pytorch_optimizer.base.optimizer import BaseOptimizer
 from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup, State
+from pytorch_optimizer.optimizer.orthograd import OrthoGrad
+from pytorch_optimizer.optimizer.lookahead import Lookahead
 
+# Some optimizers want to work with `nn.Module`, but Kohya only provides raw parameter groups.
+KOHYA_INCOMPATIBLE = (
+    'lomo',
+    'adalomo',
+    'adammini',
+    'muon',
+    'adamuon',
+    'adago',
+)
 
 class KohyaHelper(BaseOptimizer):
     """A wrapper optimizer to make this library easier to use in Kohya_ss.
@@ -29,66 +40,60 @@ class KohyaHelper(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: Union[Parameters, nn.Module],
         lr: float = 1e-3,
         optimizer_name: Optional[str] = None,
         use_lookahead: bool = False,
         use_orthograd: bool = False,
         **kwargs,
     ) -> None:
-        from pytorch_optimizer.optimizer import create_optimizer
+        from pytorch_optimizer.optimizer import create_optimizer, load_optimizer, OPTIMIZER
 
         if optimizer_name is None:
             raise ValueError(f'optimizer_name must be provided')
         
-        self._optimizer_step_pre_hooks: Dict[int, Callable] = {}
-        self._optimizer_step_post_hooks: Dict[int, Callable] = {}
-
-        # If params is already an nn.Module, use it directly
-        # Otherwise, wrap parameters in a dummy module to make them compatible with create_optimizer
         if isinstance(params, nn.Module):
-            model = params
+            # Just in case someone does provide a module, we can defer to `create_optimizer`.
+            optimizer = create_optimizer(
+                params, optimizer_name, lr,
+                use_lookahead=use_lookahead,
+                use_orthograd=use_orthograd,
+                **kwargs
+            )
         else:
-            # Wrap parameters in a dummy module
-            class DummyModule(nn.Module):
-                def __init__(self, params):
-                    super().__init__()
-                    # Check if params is already a list of parameter groups
-                    # (each group is a dict with 'params' key)
-                    if isinstance(params, list) and len(params) > 0 and isinstance(params[0], dict):
-                        # It's already parameter groups, use as-is
-                        self._param_groups = params
-                    else:
-                        # It's raw parameters, create a simple parameter group
-                        # Convert to list if it's a generator/iterator
-                        self._param_groups = [{'params': list(params)}]
-                
-                def parameters(self, recurse: bool = True):
-                    # Return flattened parameters from all groups
-                    for group in self._param_groups:
-                        for p in group['params']:
-                            yield p
-                
-                def named_parameters(self, prefix: str = '', recurse: bool = True):
-                    # Generate names for parameters
-                    for i, group in enumerate(self._param_groups):
-                        for j, p in enumerate(group['params']):
-                            name = f'{prefix}group_{i}.param_{j}'
-                            yield name, p
-                
-                def named_modules(self, memo=None, prefix: str = '', remove_duplicate: bool = True):
-                    # For compatibility with optimizers that expect named_modules
-                    # Return self as the only module
-                    yield prefix, self
-            
-            model = DummyModule(params)
-        
-        self.optimizer: Optimizer = create_optimizer(
-            model, optimizer_name, lr,
-            use_lookahead=use_lookahead,
-            use_orthograd=use_orthograd,
-            **kwargs
-        )
+            # Unfortunately, we're reimplementing most of `create_optimizer` here.
+            # It currently does not work well with the parameter groups Kohya provides.
+            # In particular, `params[*]['lr']` is usually tossed away, breaking the feature
+            # that allows the UNet and text encoder to have separate learning rates.
+
+            if optimizer_name in (KOHYA_INCOMPATIBLE):
+                raise ValueError(f'optimizer {optimizer_name} is incompatible with KohyaHelper')
+
+            self._optimizer_step_pre_hooks: Dict[int, Callable] = {}
+            self._optimizer_step_post_hooks: Dict[int, Callable] = {}
+
+            optimizer_class: OPTIMIZER = load_optimizer(optimizer_name)
+
+            if optimizer_name == 'alig':
+                optimizer = optimizer_class(params, max_lr=lr, **kwargs)
+            else:
+                optimizer = optimizer_class(params, lr=lr, **kwargs)
+
+            if use_orthograd:
+                optimizer = OrthoGrad(optimizer, **kwargs)
+
+            if use_lookahead:
+                if optimizer_name in ('ranger', 'ranger21', 'ranger25'):
+                    warn(f'{optimizer} already has a Lookahead variant.', UserWarning, stacklevel=1)
+                else:
+                    optimizer = Lookahead(
+                        optimizer,
+                        k=kwargs.get('k', 5),
+                        alpha=kwargs.get('alpha', 0.5),
+                        pullback_momentum=kwargs.get('pullback_momentum', 'none'),
+                    )
+
+        self.optimizer = optimizer
 
     def __str__(self) -> str:
         return f'KohyaHelper[{type(self.optimizer).__name__}]'
