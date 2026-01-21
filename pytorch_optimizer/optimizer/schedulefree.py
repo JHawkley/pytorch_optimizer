@@ -608,8 +608,9 @@ class ScheduleFreeWrapper(BaseOptimizer):
         self.train_mode = True
 
     def init_group(self, group: ParamGroup, **kwargs) -> None:
-        if 'step' not in group:
-            group['step'] = 0
+        # In case the wrapped optimizer also tracks 'step', store ours separately.
+        if 'schedulefree_step' not in group:
+            group['schedulefree_step'] = 0
 
         for p in group['params']:
             if p.grad is None:
@@ -642,7 +643,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
 
         for group in self.param_groups:
             self.init_group(group)
-            group['step'] += 1
+            group['schedulefree_step'] += 1
 
             for p in group['params']:
                 if p.grad is None:
@@ -685,7 +686,7 @@ class ScheduleFreeWrapper(BaseOptimizer):
             lr: float = group['lr'] * group.get('d', 1.0)
             lr_max = group['lr_max'] = max(lr, group.get('lr_max', 0))
 
-            weight: float = (group['step'] ** group['lr']) * (lr_max ** self.weight_lr_power)  # fmt: skip
+            weight: float = (group['schedulefree_step'] ** group['lr']) * (lr_max ** self.weight_lr_power)  # fmt: skip
             weight_sum = group['weight_sum'] = group.get('weight_sum', 0.0) + weight
 
             checkpoint: float = weight / weight_sum if weight_sum != 0.0 else 0.0
