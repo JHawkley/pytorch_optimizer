@@ -84,14 +84,14 @@ class KohyaHelper(BaseOptimizer):
                 optimizer = optimizer_class(params, max_lr=lr, **kwargs)
             else:
                 optimizer = optimizer_class(params, lr=lr, **kwargs)
-
-            if use_orthograd:
-                optimizer = OrthoGrad(optimizer, **kwargs)
             
             if use_schedulefree:
                 # Make sure the explicit `momentum` is not accidentally overridden by `kwargs`.
                 filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'momentum'}
                 optimizer = ScheduleFreeWrapper(optimizer, momentum=schedulefree_momentum, **filtered_kwargs)
+
+            if use_orthograd:
+                optimizer = OrthoGrad(optimizer, **kwargs)
 
             if use_lookahead:
                 if optimizer_name in ('ranger', 'ranger21', 'ranger25'):
