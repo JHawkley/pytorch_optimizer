@@ -7,14 +7,14 @@ from torch.optim import Optimizer
 
 from pytorch_optimizer.base.exception import NegativeLRError, NegativeStepError
 from pytorch_optimizer.base.type import (
-    HUTCHINSON_G,
-    OPTIMIZER_INSTANCE_OR_CLASS,
     Betas,
     Closure,
     Defaults,
+    HutchinsonG,
     Loss,
-    Parameters,
+    OptimizerInstanceOrClass,
     ParamGroup,
+    ParamsT,
     State,
 )
 from pytorch_optimizer.optimizer.foreach_utils import foreach_rsqrt_
@@ -23,11 +23,11 @@ from pytorch_optimizer.optimizer.foreach_utils import foreach_rsqrt_
 class BaseOptimizer(ABC, Optimizer):
     """Base optimizer class. Provides common functionalities for the optimizers."""
 
-    def __init__(self, params: Parameters, defaults: Defaults) -> None:
+    def __init__(self, params: ParamsT, defaults: Defaults) -> None:
         super().__init__(params, defaults)
 
     @staticmethod
-    def load_optimizer(optimizer: OPTIMIZER_INSTANCE_OR_CLASS, **kwargs) -> Optimizer:
+    def load_optimizer(optimizer: OptimizerInstanceOrClass, **kwargs) -> Optimizer:
         """Build torch.optim.Optimizer class."""
         if isinstance(optimizer, Optimizer):
             return optimizer
@@ -40,7 +40,7 @@ class BaseOptimizer(ABC, Optimizer):
 
     @staticmethod
     @torch.no_grad()
-    def set_hessian(param_groups: Parameters, state: State, hessian: List[torch.Tensor]) -> None:
+    def set_hessian(param_groups: ParamsT, state: State, hessian: List[torch.Tensor]) -> None:
         """Set hessian to state from external source. Generally useful when using functorch as a base.
 
         Args:
@@ -70,11 +70,11 @@ class BaseOptimizer(ABC, Optimizer):
                 i += 1
 
     @staticmethod
-    def zero_hessian(param_groups: Parameters, state: State, pre_zero: bool = True) -> None:
+    def zero_hessian(param_groups: ParamsT, state: State, pre_zero: bool = True) -> None:
         """Zero-out Hessian.
 
         Args:
-            param_groups (Parameters): Parameter groups from the optimizer.
+            param_groups (ParamsT): Parameter groups from the optimizer.
             state (State): Optimizer state dictionary.
             pre_zero (bool): If True, zero-out the Hessian before computing/updating it.
         """
@@ -89,20 +89,20 @@ class BaseOptimizer(ABC, Optimizer):
     @staticmethod
     @torch.no_grad()
     def compute_hutchinson_hessian(
-        param_groups: Parameters,
+        param_groups: ParamsT,
         state: State,
         num_samples: int = 1,
         alpha: float = 1.0,
-        distribution: HUTCHINSON_G = 'gaussian',
+        distribution: HutchinsonG = 'gaussian',
     ) -> None:
         r"""Hutchinson's approximate Hessian, added to the state under key `hessian`.
 
         Args:
-            param_groups (Parameters): Parameter groups from the optimizer.
+            param_groups (ParamsT): Parameter groups from the optimizer.
             state (State): Optimizer state dictionary.
             num_samples (int): Number of times to sample noise vector `z` for the trace approximation.
             alpha (float): Scaling factor for the Hessian estimate.
-            distribution (HUTCHINSON_G): Type of noise distribution used (e.g., Rademacher).
+            distribution (HutchinsonG): Type of noise distribution used (e.g., Rademacher).
         """
         if distribution not in ('gaussian', 'rademacher'):
             raise NotImplementedError(f'hessian with distribution {distribution} is not implemented.')
@@ -515,7 +515,12 @@ class BaseOptimizer(ABC, Optimizer):
         if x % y != 0:
             raise ValueError(f'{x} must be divisible by {y}')
 
-    def validate_betas(self, betas: Betas, beta_range_type: str = '[)', beta3_range_type: str = '[]') -> None:
+    def validate_betas(
+        self,
+        betas: Union[Betas, Tuple[None, float]],
+        beta_range_type: str = '[)',
+        beta3_range_type: str = '[]',
+    ) -> None:
         if betas[0] is not None:
             self.validate_range(betas[0], 'beta1', 0.0, 1.0, range_type=beta_range_type)
 

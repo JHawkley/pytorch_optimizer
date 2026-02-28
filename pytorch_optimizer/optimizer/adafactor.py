@@ -5,7 +5,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.foreach_utils import foreach_rsqrt
 
 
@@ -15,9 +15,10 @@ class AdaFactor(BaseOptimizer):
     PyTorch implementation of BigVision's AdaFactor variant
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
-        betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
+        betas (Union[Tuple[None, float], Tuple[float, float], Tuple[float, float, float]]): Coefficients used for
+            computing running averages of gradient and the squared Hessian trace.
             If beta1 is None, first momentum will be skipped. beta2 is an upper bound cap.
         decay_rate (float): Coefficient used to compute running averages of squared gradient.
         weight_decay (float): Weight decay (L2 penalty).
@@ -41,9 +42,9 @@ class AdaFactor(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: Optional[float] = 1e-3,
-        betas: Betas = (0.9, 0.999),
+        betas: Union[Tuple[None, float], Tuple[float, float], Tuple[float, float, float]] = (0.9, 0.999),
         decay_rate: float = -0.8,
         weight_decay: float = 0.0,
         weight_decouple: bool = True,

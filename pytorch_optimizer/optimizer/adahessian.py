@@ -4,7 +4,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import HUTCHINSON_G, Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, HutchinsonG, Loss, ParamGroup, ParamsT
 
 
 class AdaHessian(BaseOptimizer):
@@ -13,7 +13,7 @@ class AdaHessian(BaseOptimizer):
     Requires `loss.backward(create_graph=True)` in order to calculate Hessians.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -22,14 +22,14 @@ class AdaHessian(BaseOptimizer):
         hessian_power (float): Exponent applied to the Hessian trace for scaling updates.
         update_period (int): Number of steps after which to apply the Hessian approximation.
         num_samples (int): Number of times to sample `z` when approximating the Hessian trace.
-        hessian_distribution (HUTCHINSON_G): Type of distribution used to initialize the Hutchinson trace estimator.
+        hessian_distribution (HutchinsonG): Type of distribution used to initialize the Hutchinson trace estimator.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-1,
         betas: Betas = (0.9, 0.999),
         weight_decay: float = 0.0,
@@ -38,7 +38,7 @@ class AdaHessian(BaseOptimizer):
         hessian_power: float = 1.0,
         update_period: int = 1,
         num_samples: int = 1,
-        hessian_distribution: HUTCHINSON_G = 'rademacher',
+        hessian_distribution: HutchinsonG = 'rademacher',
         eps: float = 1e-16,
         maximize: bool = False,
         **kwargs,

@@ -4,14 +4,14 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class SRMM(BaseOptimizer):
     """Stochastic regularized majorization-minimization with weakly convex and multi-convex surrogates.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         beta (float): Adaptivity weight.
         memory_length (Optional[int]): Internal memory length for moving average. None for no refreshing.
@@ -20,7 +20,7 @@ class SRMM(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 0.01,
         beta: float = 0.5,
         memory_length: Optional[int] = 100,

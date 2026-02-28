@@ -6,7 +6,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import DATA_FORMAT, Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, DataFormat, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.shampoo_utils import merge_small_dims
 
 
@@ -14,7 +14,7 @@ class SOAP(BaseOptimizer):
     """Improving and Stabilizing Shampoo using Adam.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         shampoo_beta (Optional[float]): If not None, use this beta for the pre-conditioner
@@ -33,7 +33,7 @@ class SOAP(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 3e-3,
         betas: Betas = (0.95, 0.95),
         shampoo_beta: Optional[float] = None,
@@ -44,7 +44,7 @@ class SOAP(BaseOptimizer):
         precondition_1d: bool = False,
         correct_bias: bool = True,
         normalize_gradient: bool = False,
-        data_format: DATA_FORMAT = 'channels_first',
+        data_format: DataFormat = 'channels_first',
         eps: float = 1e-8,
         maximize: bool = False,
         **kwargs,

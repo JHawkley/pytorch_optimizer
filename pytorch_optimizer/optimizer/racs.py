@@ -5,14 +5,14 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class RACS(BaseOptimizer):
     """Row and Column Scaled SGD.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         beta (float): momentum factor.
         alpha (float): scaler.
@@ -26,7 +26,7 @@ class RACS(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         beta: float = 0.9,
         alpha: float = 0.05,
@@ -140,7 +140,7 @@ class Alice(BaseOptimizer):
     """Adaptive low-dimensional subspace estimation.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         betas (Betas): coefficients used for computing running averages of gradient and the squared Hessian trace.
             beta3=0 for Alice-0 optimizer.
@@ -159,7 +159,7 @@ class Alice(BaseOptimizer):
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 0.02,
         betas: Betas = (0.9, 0.9, 0.999),
         alpha: float = 0.3,

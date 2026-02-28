@@ -10,14 +10,14 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class Fromage(BaseOptimizer):
     """On the distance between two neural networks and the stability of learning.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         p_bound (Optional[float]): Restricts the optimization to a bounded set. For example, a value of 2.0 restricts
             parameter norms to lie within 2x their initial norms, which helps regularize the model class.
@@ -25,7 +25,7 @@ class Fromage(BaseOptimizer):
     """
 
     def __init__(
-        self, params: Parameters, lr: float = 1e-2, p_bound: Optional[float] = None, maximize: bool = False, **kwargs
+        self, params: ParamsT, lr: float = 1e-2, p_bound: Optional[float] = None, maximize: bool = False, **kwargs
     ):
         self.validate_learning_rate(lr)
 
