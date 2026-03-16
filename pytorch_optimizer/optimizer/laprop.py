@@ -4,14 +4,14 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class LaProp(BaseOptimizer):
     """Separating Momentum and Adaptivity in Adam.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         centered (bool): If True, use the centered variant of Adam.
@@ -21,11 +21,12 @@ class LaProp(BaseOptimizer):
         ams_bound (bool): Whether to use the AMSBound variant.
         eps (float): Epsilon value for numerical stability.
         maximize (bool): Maximize the objective with respect to the params, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 4e-4,
         betas: Betas = (0.9, 0.999),
         centered: bool = False,

@@ -6,7 +6,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.shampoo_utils import zero_power_via_newton_schulz_5
 
 
@@ -42,6 +42,7 @@ class Col(Norm):
         normalized (bool): normalize by the input dimension; use for non-input layers.
         transpose (bool): transpose input before normalization; use for embedding layers with shape
             (vocab_size, embedding_dim).
+
     """
 
     def __init__(self, normalized: bool = False, transpose: bool = False) -> None:
@@ -90,6 +91,7 @@ class Row(Norm):
         normalized (bool): normalize by the input dimension; use for non-input layers.
         transpose (bool): transpose input before normalization; use for embedding layers with shape
             (vocab_size, embedding_dim).
+
     """
 
     def __init__(self, normalized: bool = True, transpose: bool = False) -> None:
@@ -146,6 +148,7 @@ class SpectralConv(Norm):
 
     Args:
         num_steps (int): number of steps of zero-power Newton-Schulz normalization, typically 5.
+
     """
 
     def __init__(self, num_steps: int = 5) -> None:
@@ -181,6 +184,7 @@ class Spectral(Norm):
         max_scale (bool): set upper bound (1.0) of the scale.
         normalize (bool): normalize by the input dimension; use for non-input layers.
         num_steps (int): number of zero-power Newton-Schulz normalization steps, typically 5.
+
     """
 
     def __init__(self, max_scale: bool = False, normalize: bool = True, num_steps: int = 5) -> None:
@@ -223,6 +227,7 @@ class Sign(Norm):
     Args:
         zero_init (bool): initialize with zero.
         normalize (bool): normalize by the input dimension; use for non-input layers.
+
     """
 
     def __init__(self, zero_init: bool = False, normalize: bool = True) -> None:
@@ -293,7 +298,7 @@ class SCION(BaseOptimizer):
     """Training Deep Learning Models with Norm-Constrained LMOs.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         momentum (float): momentum factor. 1.0 - usual momentum.
         constraint (bool): whether to use a constraint SCG or not.
@@ -324,11 +329,12 @@ class SCION(BaseOptimizer):
         >>> optimizer = SCION(parameter_groups)
 
         For more details, checkout here https://github.com/LIONS-EPFL/scion/tree/main?tab=readme-ov-file#examples
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         momentum: float = 0.1,
         constraint: bool = False,
@@ -489,7 +495,7 @@ class SCIONLight(BaseOptimizer):
     r"""Memory-efficient variant of the Scion optimizer.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         momentum (float): momentum factor. 1.0 - usual momentum.
         constraint (bool): whether to use a constraint SCG or not.
@@ -520,11 +526,12 @@ class SCIONLight(BaseOptimizer):
         >>> optimizer = SCIONLight(parameter_groups)
 
         For more details, checkout here https://github.com/LIONS-EPFL/scion/tree/main?tab=readme-ov-file#examples
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         momentum: float = 0.1,
         constraint: bool = False,

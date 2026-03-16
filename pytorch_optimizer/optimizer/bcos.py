@@ -4,7 +4,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 Mode = Literal['g', 'm', 'c']
 
@@ -13,7 +13,7 @@ class BCOS(BaseOptimizer):
     """Stochastic Approximation with Block Coordinate Optimal Stepsizes.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         beta (float): smoothing factor in computing the momentum and EMA estimators.
         beta2 (Optional[float]):
@@ -26,11 +26,12 @@ class BCOS(BaseOptimizer):
         weight_decouple (bool): The optimizer uses decoupled weight decay as in AdamW.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         beta: float = 0.9,
         beta2: Optional[float] = None,

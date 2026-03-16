@@ -4,7 +4,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import HUTCHINSON_G, Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, HutchinsonG, Loss, ParamGroup, ParamsT
 
 
 class SophiaH(BaseOptimizer):
@@ -13,7 +13,7 @@ class SophiaH(BaseOptimizer):
     Requires `loss.backward(create_graph=True)` in order to calculate hessians.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -22,14 +22,15 @@ class SophiaH(BaseOptimizer):
         p (float): Clip effective (applied) gradient (p).
         update_period (int): Number of steps after which to apply Hessian approximation.
         num_samples (int): Times to sample z for the approximation of the Hessian trace.
-        hessian_distribution: HUTCHINSON_G. Type of distribution to initialize Hessian.
+        hessian_distribution: HutchinsonG. Type of distribution to initialize Hessian.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 6e-2,
         betas: Betas = (0.96, 0.99),
         weight_decay: float = 0.0,
@@ -38,7 +39,7 @@ class SophiaH(BaseOptimizer):
         p: float = 1e-2,
         update_period: int = 10,
         num_samples: int = 1,
-        hessian_distribution: HUTCHINSON_G = 'gaussian',
+        hessian_distribution: HutchinsonG = 'gaussian',
         eps: float = 1e-12,
         maximize: bool = False,
         **kwargs,

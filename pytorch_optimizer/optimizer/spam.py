@@ -8,7 +8,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, LRScheduler
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class CosineDecay:
@@ -19,6 +19,7 @@ class CosineDecay:
         t_max (int): Maximum number of iterations for the decay.
         eta_min (Optional[float]): Minimum value of the parameter after decay. Defaults to 0.
         last_epoch (Optional[int]): The index of the last epoch. Defaults to -1.
+
     """
 
     def __init__(self, death_rate: float, t_max: int, eta_min: float = 0.0, last_epoch: int = -1):
@@ -32,6 +33,7 @@ class CosineDecay:
 
         Args:
             current_step (int): Current step index.
+
         """
         self.cosine_stepper.last_epoch = current_step
         self.cosine_stepper.step()
@@ -41,6 +43,7 @@ class CosineDecay:
 
         Args:
             current_step (int): Current step index.
+
         """
         if current_step >= self.t_max:
             return self.eta_min
@@ -54,7 +57,7 @@ class SPAM(BaseOptimizer):
     r"""Spike-Aware Adam with Momentum Reset for Stable LLM Training.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         density (float): Density parameter. Only used for 2D parameters (e.g., Linear).
@@ -65,11 +68,12 @@ class SPAM(BaseOptimizer):
         update_proj_gap (int): Update projection gap.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         betas: Betas = (0.9, 0.999),
         density: float = 1.0,
@@ -276,7 +280,7 @@ class StableSPAM(BaseOptimizer):
     r"""How to Train in 4-Bit More Stably than 16-Bit Adam.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         gamma1 (float): Gamma1 parameter.
@@ -288,11 +292,12 @@ class StableSPAM(BaseOptimizer):
         update_proj_gap (int): Update projection gap.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         betas: Betas = (0.9, 0.999),
         gamma1: float = 0.7,

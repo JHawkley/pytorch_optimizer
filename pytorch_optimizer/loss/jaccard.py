@@ -4,7 +4,7 @@ import torch
 from torch.nn.functional import logsigmoid, one_hot
 from torch.nn.modules.loss import _Loss
 
-from pytorch_optimizer.base.type import CLASS_MODE
+from pytorch_optimizer.base.type import ClassMode
 
 
 def soft_jaccard_score(
@@ -22,6 +22,7 @@ def soft_jaccard_score(
         label_smooth (float): Label smoothing factor to avoid zero denominators.
         eps (float): Small epsilon for numerical stability.
         dims (Optional[Tuple[int, ...]]): Dimensions to reduce over when computing the score.
+
     """
     if dims is not None:
         intersection = torch.sum(output * target, dim=dims)
@@ -47,11 +48,12 @@ class JaccardLoss(_Loss):
         from_logits (bool): If True, input is raw logits, which will be converted to probabilities.
         label_smooth (float): Label smoothing constant.
         eps (float): Small number to prevent division by zero.
+
     """
 
     def __init__(
         self,
-        mode: CLASS_MODE,
+        mode: ClassMode,
         classes: Optional[List[int]] = None,
         log_loss: bool = False,
         from_logits: bool = True,

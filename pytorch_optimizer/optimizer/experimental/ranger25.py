@@ -5,7 +5,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.agc import agc
 
 
@@ -23,7 +23,7 @@ class Ranger25(BaseOptimizer):
         * Cautious Weight Decay
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -35,11 +35,12 @@ class Ranger25(BaseOptimizer):
         eps (Optional[float]): Term added to the denominator to improve numerical stability.
             When eps is None and stable_adamw is False, adam-atan2 feature will be used.
         maximize (bool): Maximize the objective w.r.t the parameters instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         betas: Betas = (0.9, 0.98, 0.9999),
         weight_decay: float = 1e-3,

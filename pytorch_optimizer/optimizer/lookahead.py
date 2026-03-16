@@ -5,22 +5,23 @@ import torch
 from torch.optim import Optimizer
 
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import OPTIMIZER_INSTANCE_OR_CLASS, Closure, Defaults, Loss, ParamGroup, State
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, OptimizerInstanceOrClass, ParamGroup, State
 
 
 class Lookahead(BaseOptimizer):
     """k steps forward, 1 step back.
 
     Args:
-        optimizer (OPTIMIZER_INSTANCE_OR_CLASS): Base optimizer.
+        optimizer (OptimizerInstanceOrClass): Base optimizer.
         k (int): Number of lookahead steps.
         alpha (float): Linear interpolation factor.
         pullback_momentum (str): Change to inner optimizer momentum on interpolation update.
+
     """
 
     def __init__(
         self,
-        optimizer: OPTIMIZER_INSTANCE_OR_CLASS,
+        optimizer: OptimizerInstanceOrClass,
         k: int = 5,
         alpha: float = 0.5,
         pullback_momentum: str = 'none',
@@ -98,11 +99,13 @@ class Lookahead(BaseOptimizer):
                 del state['backup_params']
 
     def state_dict(self) -> State:
-        return {'lookahead_state': self.state, 'base_optimizer': self.optimizer.state_dict()}
+        lookahead_state: State = {p: dict(param_state) for p, param_state in self.state.items()}
+        return {'lookahead_state': lookahead_state, 'base_optimizer': self.optimizer.state_dict()}
 
     def load_state_dict(self, state: State) -> None:
         r"""Load state."""
-        self.state = state['lookahead_state']
+        lookahead_state = state['lookahead_state']
+        self.state = defaultdict(dict, {p: dict(param_state) for p, param_state in lookahead_state.items()})
         self.optimizer.load_state_dict(state['base_optimizer'])
 
     @torch.no_grad()

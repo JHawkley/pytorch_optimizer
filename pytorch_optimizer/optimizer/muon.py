@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple
+from typing import List, Tuple, cast
 
 import torch
 from torch import nn
@@ -8,8 +8,12 @@ from torch.optim import Optimizer
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Loss, Parameters, ParamGroup
-from pytorch_optimizer.optimizer.shampoo_utils import zero_power_via_newton_schulz_5
+from pytorch_optimizer.base.type import Betas, Closure, Loss, ParamGroup, ParamsT
+from pytorch_optimizer.optimizer.shampoo_utils import (
+    NewtonSchulzWeights,
+    get_newton_schulz_weights,
+    zero_power_via_newton_schulz_5,
+)
 
 
 def get_adjusted_lr(lr: float, param_shape: Tuple[float, ...], use_adjusted_lr: bool = False) -> float:
@@ -41,13 +45,14 @@ class Muon(BaseOptimizer):
     - We believe it may not work well for fine-tuning pretrained models, but we haven't tested this.
 
     Args:
-        params (Parameters): The parameters to be optimized by Muon.
+        params (ParamsT): The parameters to be optimized by Muon.
         lr (float): Learning rate.
         momentum (float): The momentum used by the internal SGD.
         weight_decay (float): Weight decay (L2 penalty).
         weight_decouple (bool): The optimizer uses decoupled weight decay as in AdamW.
         nesterov (bool): Whether to use nesterov momentum.
         ns_steps (int): The number of Newton-Schulz iterations to run. (5 is probably always enough)
+        ns_coeffs (NewtonSchulzWeights): Newton-Schulz coefficients or preset name.
         use_adjusted_lr (bool): Whether to use adjusted learning rate, which is from the Moonlight.
             Reference: https://github.com/MoonshotAI/Moonlight/blob/master/examples/toy_train.py
         adamw_lr (float): The learning rate for the internal AdamW.
@@ -75,17 +80,19 @@ class Muon(BaseOptimizer):
         ]
 
         optimizer = Muon(param_groups)
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 2e-2,
         momentum: float = 0.95,
         weight_decay: float = 0.0,
         weight_decouple: bool = True,
         nesterov: bool = True,
         ns_steps: int = 5,
+        ns_coeffs: NewtonSchulzWeights = 'original',
         use_adjusted_lr: bool = False,
         adamw_lr: float = 3e-4,
         adamw_betas: Betas = (0.9, 0.95),
@@ -102,10 +109,12 @@ class Muon(BaseOptimizer):
         self.validate_betas(adamw_betas)
         self.validate_non_negative(adamw_wd, 'adamw_wd')
         self.validate_non_negative(adamw_eps, 'adamw_eps')
+        ns_coeffs = get_newton_schulz_weights(ns_coeffs)
 
         self.maximize = maximize
 
-        for group in params or []:
+        for group in params:
+            group = cast(ParamGroup, group)
             if 'use_muon' not in group:
                 raise ValueError('`use_muon` must be set.')
 
@@ -115,6 +124,7 @@ class Muon(BaseOptimizer):
                 group['nesterov'] = group.get('nesterov', nesterov)
                 group['weight_decay'] = group.get('weight_decay', weight_decay)
                 group['ns_steps'] = group.get('ns_steps', ns_steps)
+                group['ns_coeffs'] = get_newton_schulz_weights(group.get('ns_coeffs', ns_coeffs))
                 group['use_adjusted_lr'] = group.get('use_adjusted_lr', use_adjusted_lr)
             else:
                 group['lr'] = group.get('lr', adamw_lr)
@@ -191,7 +201,9 @@ class Muon(BaseOptimizer):
                     if update.ndim > 2:
                         update = update.view(len(update), -1)
 
-                    update = zero_power_via_newton_schulz_5(update, num_steps=group['ns_steps'])
+                    update = zero_power_via_newton_schulz_5(
+                        update, num_steps=group['ns_steps'], weights=group['ns_coeffs']
+                    )
 
                     if group.get('cautious'):
                         self.apply_cautious(update, grad)
@@ -232,13 +244,14 @@ class DistributedMuon(BaseOptimizer):  # pragma: no cover
     - We believe it may not work well for fine-tuning pretrained models, but we haven't tested this.
 
     Args:
-        params (Parameters): The parameters to be optimized by Muon.
+        params (ParamsT): The parameters to be optimized by Muon.
         lr (float): Learning rate.
         momentum (float): The momentum used by the internal SGD.
         weight_decay (float): Weight decay (L2 penalty).
         weight_decouple (bool): The optimizer uses decoupled weight decay as in AdamW.
         nesterov (bool): Whether to use nesterov momentum.
         ns_steps (int): The number of Newton-Schulz iterations to run. (5 is probably always enough)
+        ns_coeffs (NewtonSchulzWeights): Newton-Schulz coefficients or preset name.
         use_adjusted_lr (bool): Whether to use adjusted learning rate, which is from the Moonlight.
             Reference: https://github.com/MoonshotAI/Moonlight/blob/master/examples/toy_train.py
         adamw_lr (float): The learning rate for the internal AdamW.
@@ -266,17 +279,19 @@ class DistributedMuon(BaseOptimizer):  # pragma: no cover
         ]
 
         optimizer = DistributedMuon(param_groups)
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 2e-2,
         momentum: float = 0.95,
         weight_decay: float = 0.0,
         weight_decouple: bool = True,
         nesterov: bool = True,
         ns_steps: int = 5,
+        ns_coeffs: NewtonSchulzWeights = 'original',
         use_adjusted_lr: bool = False,
         adamw_lr: float = 3e-4,
         adamw_betas: Betas = (0.9, 0.95),
@@ -293,13 +308,15 @@ class DistributedMuon(BaseOptimizer):  # pragma: no cover
         self.validate_betas(adamw_betas)
         self.validate_non_negative(adamw_wd, 'adamw_wd')
         self.validate_non_negative(adamw_eps, 'adamw_eps')
+        ns_coeffs = get_newton_schulz_weights(ns_coeffs)
 
         self.maximize = maximize
 
         self.world_size: int = get_world_size()
         self.rank: int = get_rank()
 
-        for group in params or []:
+        for group in params:
+            group = cast(ParamGroup, group)
             if 'use_muon' not in group:
                 raise ValueError('`use_muon` must be set.')
 
@@ -309,6 +326,7 @@ class DistributedMuon(BaseOptimizer):  # pragma: no cover
                 group['nesterov'] = group.get('nesterov', nesterov)
                 group['weight_decay'] = group.get('weight_decay', weight_decay)
                 group['ns_steps'] = group.get('ns_steps', ns_steps)
+                group['ns_coeffs'] = get_newton_schulz_weights(group.get('ns_coeffs', ns_coeffs))
                 group['use_adjusted_lr'] = group.get('use_adjusted_lr', use_adjusted_lr)
             else:
                 group['lr'] = group.get('lr', adamw_lr)
@@ -389,7 +407,9 @@ class DistributedMuon(BaseOptimizer):  # pragma: no cover
                         if update.ndim > 2:
                             update = update.view(len(update), -1)
 
-                        update = zero_power_via_newton_schulz_5(update, num_steps=group['ns_steps'])
+                        update = zero_power_via_newton_schulz_5(
+                            update, num_steps=group['ns_steps'], weights=group['ns_coeffs']
+                        )
 
                         if group.get('cautious'):
                             self.apply_cautious(update, grad)
@@ -436,12 +456,13 @@ class AdaMuon(BaseOptimizer):
     - We believe it may not work well for fine-tuning pretrained models, but we haven't tested this.
 
     Args:
-        params (Parameters): The parameters to be optimized by Muon.
+        params (ParamsT): The parameters to be optimized by Muon.
         lr (float): Learning rate.
         betas (tuple): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
         weight_decouple (bool): The optimizer uses decoupled weight decay as in AdamW.
         ns_steps (int): The number of Newton-Schulz iterations to run. (5 is probably always enough)
+        ns_coeffs (NewtonSchulzWeights): Newton-Schulz coefficients or preset name.
         use_adjusted_lr (bool): Whether to use adjusted learning rate, which is from the Moonlight.
             Reference: https://github.com/MoonshotAI/Moonlight/blob/master/examples/toy_train.py
         adamw_lr (float): The learning rate for the internal AdamW.
@@ -469,16 +490,18 @@ class AdaMuon(BaseOptimizer):
         ]
 
         optimizer = AdaMuon(param_groups)
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 2e-2,
         betas: Betas = (0.9, 0.95),
         weight_decay: float = 0.0,
         weight_decouple: bool = True,
         ns_steps: int = 5,
+        ns_coeffs: NewtonSchulzWeights = 'original',
         use_adjusted_lr: bool = False,
         adamw_lr: float = 3e-4,
         adamw_betas: Betas = (0.9, 0.999),
@@ -495,10 +518,12 @@ class AdaMuon(BaseOptimizer):
         self.validate_betas(adamw_betas)
         self.validate_non_negative(adamw_wd, 'adamw_wd')
         self.validate_non_negative(eps, 'eps')
+        ns_coeffs = get_newton_schulz_weights(ns_coeffs)
 
         self.maximize = maximize
 
-        for group in params or []:
+        for group in params:
+            group = cast(ParamGroup, group)
             if 'use_muon' not in group:
                 raise ValueError('`use_muon` must be set.')
 
@@ -507,6 +532,7 @@ class AdaMuon(BaseOptimizer):
                 group['betas'] = group.get('betas', betas)
                 group['weight_decay'] = group.get('weight_decay', weight_decay)
                 group['ns_steps'] = group.get('ns_steps', ns_steps)
+                group['ns_coeffs'] = get_newton_schulz_weights(group.get('ns_coeffs', ns_coeffs))
                 group['use_adjusted_lr'] = group.get('use_adjusted_lr', use_adjusted_lr)
             else:
                 group['lr'] = group.get('lr', adamw_lr)
@@ -590,7 +616,9 @@ class AdaMuon(BaseOptimizer):
                     if update.ndim > 2:
                         update = update.view(len(update), -1)
 
-                    update = zero_power_via_newton_schulz_5(update, num_steps=group['ns_steps']).flatten()
+                    update = zero_power_via_newton_schulz_5(
+                        update, num_steps=group['ns_steps'], weights=group['ns_coeffs']
+                    ).flatten()
 
                     v = state['v']
                     v.mul_(beta2).addcmul_(update, update, value=1.0 - beta2)
@@ -620,7 +648,7 @@ class AdaGO(BaseOptimizer):
     """AdaGrad Meets Muon: Adaptive Stepsizes for Orthogonal Updates.
 
     Args:
-        params (Parameters): The parameters to be optimized by Muon.
+        params (ParamsT): The parameters to be optimized by Muon.
         lr (float): Learning rate.
         momentum (float): The momentum used by the internal SGD.
         weight_decay (float): Weight decay (L2 penalty).
@@ -629,6 +657,7 @@ class AdaGO(BaseOptimizer):
         gamma (float): Gamma factor. Empirically, AdaGO performs robustly across a wide range of gamma values.
         eps (float): Epsilon value. Lower bound eps > 0 on the stepsizes.
         ns_steps (int): The number of Newton-Schulz iterations to run. (5 is probably always enough)
+        ns_coeffs (NewtonSchulzWeights): Newton-Schulz coefficients or preset name.
         use_adjusted_lr (bool): Whether to use adjusted learning rate, which is from the Moonlight.
             Reference: https://github.com/MoonshotAI/Moonlight/blob/master/examples/toy_train.py
         adamw_lr (float): The learning rate for the internal AdamW.
@@ -656,11 +685,12 @@ class AdaGO(BaseOptimizer):
         ]
 
         optimizer = AdaGO(param_groups)
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 5e-2,
         momentum: float = 0.95,
         weight_decay: float = 0.0,
@@ -670,6 +700,7 @@ class AdaGO(BaseOptimizer):
         v: float = 1e-6,
         nesterov: bool = False,
         ns_steps: int = 5,
+        ns_coeffs: NewtonSchulzWeights = 'original',
         use_adjusted_lr: bool = False,
         adamw_lr: float = 3e-4,
         adamw_betas: Betas = (0.9, 0.95),
@@ -689,10 +720,12 @@ class AdaGO(BaseOptimizer):
         self.validate_betas(adamw_betas)
         self.validate_non_negative(adamw_wd, 'adamw_wd')
         self.validate_non_negative(adamw_eps, 'adamw_eps')
+        ns_coeffs = get_newton_schulz_weights(ns_coeffs)
 
         self.maximize = maximize
 
-        for group in params or []:
+        for group in params:
+            group = cast(ParamGroup, group)
             if 'use_muon' not in group:
                 raise ValueError('`use_muon` must be set.')
 
@@ -702,6 +735,7 @@ class AdaGO(BaseOptimizer):
                 group['nesterov'] = group.get('nesterov', nesterov)
                 group['weight_decay'] = group.get('weight_decay', weight_decay)
                 group['ns_steps'] = group.get('ns_steps', ns_steps)
+                group['ns_coeffs'] = get_newton_schulz_weights(group.get('ns_coeffs', ns_coeffs))
                 group['gamma'] = group.get('gamma', gamma)
                 group['eps'] = group.get('eps', eps)
                 group['v'] = group.get('v', v)
@@ -784,7 +818,9 @@ class AdaGO(BaseOptimizer):
                     if update.ndim > 2:
                         update = update.view(len(update), -1)
 
-                    update = zero_power_via_newton_schulz_5(update, num_steps=group['ns_steps'])
+                    update = zero_power_via_newton_schulz_5(
+                        update, num_steps=group['ns_steps'], weights=group['ns_coeffs']
+                    )
 
                     if group.get('cautious'):
                         self.apply_cautious(update, grad)
@@ -842,7 +878,7 @@ def prepare_muon_parameters(
             else:
                 non_muon_params.append(param)
 
-    param_groups: Parameters = [
+    param_groups: ParamsT = [
         {'params': muon_parameters, 'lr': lr, 'weight_decay': weight_decay, 'use_muon': True},
         {'params': non_muon_params, 'lr': adamw_lr, 'weight_decay': adamw_wd, 'use_muon': False},
     ]

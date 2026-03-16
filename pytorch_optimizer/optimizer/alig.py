@@ -4,12 +4,12 @@ import torch
 
 from pytorch_optimizer.base.exception import NoClosureError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.utils import get_global_gradient_norm
 
 
 @torch.no_grad()
-def l2_projection(parameters: Parameters, max_norm: float = 1e2) -> None:
+def l2_projection(parameters: ParamsT, max_norm: float = 1e2) -> None:
     r"""Get l2 normalized parameter."""
     global_norm = torch.sqrt(sum(p.norm().pow(2) for p in parameters or []))
     if global_norm > max_norm:
@@ -22,17 +22,18 @@ class AliG(BaseOptimizer):
     """Adaptive Learning Rates for Interpolation with Gradients.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         max_lr (Optional[float]): Maximum learning rate.
         projection_fn (Callable): Projection function to enforce constraints.
         momentum (float): Momentum factor.
         adjusted_momentum (bool): If True, use PyTorch-like momentum instead of standard Nesterov momentum.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         max_lr: Optional[float] = None,
         projection_fn: Optional[Callable] = None,
         momentum: float = 0.0,
