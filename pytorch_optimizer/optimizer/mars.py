@@ -5,7 +5,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.shampoo_utils import zero_power_via_newton_schulz_5
 
 MARS_TYPE = Literal['adamw', 'lion', 'shampoo']
@@ -15,7 +15,7 @@ class MARS(BaseOptimizer):
     """Unleashing the Power of Variance Reduction for Training Large Models.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         gamma (float): The scaling parameter that controls the strength of gradient correction.
@@ -30,11 +30,12 @@ class MARS(BaseOptimizer):
         ams_bound (bool): Whether to use the AMSBound variant.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the params, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 3e-3,
         betas: Betas = (0.95, 0.99),
         gamma: float = 0.025,

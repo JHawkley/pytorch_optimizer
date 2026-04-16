@@ -6,7 +6,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.galore_utils import GaLoreProjector
 
 SCALE_TYPE = Literal['channel', 'tensor']
@@ -16,7 +16,7 @@ class ApolloDQN(BaseOptimizer):
     """An Adaptive Parameter-wise Diagonal Quasi-Newton Method for Nonconvex Stochastic Optimization.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         init_lr (Optional[float]): Initial learning rate (default lr / 1000).
         beta (float): Coefficient used for computing running averages of gradient.
@@ -26,11 +26,12 @@ class ApolloDQN(BaseOptimizer):
         warmup_steps (int): Number of warmup steps.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-2,
         init_lr: Optional[float] = 1e-5,
         beta: float = 0.9,
@@ -165,7 +166,7 @@ class APOLLO(BaseOptimizer):
     """SGD-like Memory, AdamW-level Performance.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -174,11 +175,12 @@ class APOLLO(BaseOptimizer):
         correct_bias (bool): Whether to correct bias in Adam.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-2,
         betas: Betas = (0.9, 0.999),
         scale_type: SCALE_TYPE = 'tensor',

@@ -5,7 +5,7 @@ import torch
 
 from pytorch_optimizer.base.exception import NoComplexParameterError, NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 VARIANTS = Literal['uni', 'inc', 'exp']
 
@@ -14,18 +14,19 @@ class A2Grad(BaseOptimizer):
     """Optimal Adaptive and Accelerated Stochastic Gradient Descent.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (Optional[float]): Learning rate. No needed.
         beta (float): Beta.
         lips (float): Lipschitz constant.
         rho (float): Represents the degree of weighting decrease, a constant smoothing factor between 0 and 1.
         variant (str): Variant of A2Grad optimizer. One of 'uni', 'inc', or 'exp'.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: Optional[float] = None,
         beta: float = 10.0,
         lips: float = 10.0,

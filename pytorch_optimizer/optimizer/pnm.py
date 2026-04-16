@@ -4,14 +4,14 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class PNM(BaseOptimizer):
     """Positive-Negative Momentum.
 
     Args:
-        params (Parameters): Iterable of the parameters to optimize.
+        params (ParamsT): Iterable of the parameters to optimize.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -19,11 +19,12 @@ class PNM(BaseOptimizer):
         fixed_decay (bool): Fix weight decay.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         betas: Betas = (0.9, 1.0),
         weight_decay: float = 0.0,

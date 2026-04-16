@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.optim import Optimizer
 
-from pytorch_optimizer.base.type import Closure, Parameters
+from pytorch_optimizer.base.type import Closure, ParamsT
 from pytorch_optimizer.optimizer.utils import clip_grad_norm, has_overflow
 
 
@@ -30,6 +30,7 @@ class DynamicLossScaler:
             scale_factor.
         tolerance (float): Percentage of iterations that may overflow before decreasing the loss scale.
         threshold (float, optional): Minimum threshold below which the loss scale will not decrease.
+
     """
 
     def __init__(
@@ -99,6 +100,7 @@ class SafeFP16Optimizer(Optimizer):  # pragma: no cover
         optimizer (Optimizer): Optimizer instance.
         aggregate_g_norms (bool): Aggregate gradient norms.
         min_loss_scale (float): Minimum loss scale.
+
     """
 
     def __init__(
@@ -133,9 +135,7 @@ class SafeFP16Optimizer(Optimizer):  # pragma: no cover
         return params
 
     @classmethod
-    def build_fp32_params(
-        cls, parameters: Parameters, flatten: bool = True
-    ) -> Union[torch.Tensor, List[torch.Tensor]]:
+    def build_fp32_params(cls, parameters: ParamsT, flatten: bool = True) -> Union[torch.Tensor, List[torch.Tensor]]:
         parameters = cast(List[torch.Tensor], parameters)
 
         if flatten:
@@ -177,6 +177,7 @@ class SafeFP16Optimizer(Optimizer):  # pragma: no cover
 
         Args:
             state_dict (dict): The state dictionary to load into the optimizer.
+
         """
         if 'loss_scaler' in state_dict and self.scaler is not None and isinstance(state_dict['loss_scaler'], float):
             self.scaler.loss_scale = state_dict['loss_scaler']
@@ -191,6 +192,7 @@ class SafeFP16Optimizer(Optimizer):  # pragma: no cover
         Args:
             loss (float): The loss tensor to backpropagate.
             update_main_grads (bool): Whether to update the main gradient during backpropagation.
+
         """
         if self.scaler is not None:
             loss = loss * self.scaler.loss_scale

@@ -5,25 +5,26 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class AccSGD(BaseOptimizer):
     """Accelerating Stochastic Gradient Descent For Least Squares Regression.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         kappa (float): ratio of long to short step.
         xi (float): statistical advantage parameter.
         constant (float): any small constant under 1.
         weight_decay (float): weight decay (L2 penalty).
         maximize (bool): maximize the objective with respect to the params, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         kappa: float = 1000.0,
         xi: float = 10.0,
@@ -117,7 +118,7 @@ class SGDW(BaseOptimizer):
     """Decoupled Weight Decay Regularization.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         momentum (float): momentum factor.
         weight_decay (float): weight decay (L2 penalty).
@@ -127,11 +128,12 @@ class SGDW(BaseOptimizer):
         foreach (Optional[bool]): Whether to use foreach (multi-tensor) operations for speed.
             None means auto-detect based on device (True for CUDA, False otherwise).
         maximize (bool): maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-4,
         momentum: float = 0.0,
         weight_decay: float = 0.0,
@@ -275,7 +277,7 @@ class ASGD(BaseOptimizer):
     """Adaptive SGD with estimation of the local smoothness (curvature).
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         amplifier (float): amplifier.
         weight_decay (float): weight decay (L2 penalty).
@@ -285,11 +287,12 @@ class ASGD(BaseOptimizer):
         dampening (float): dampening for momentum.
         eps (float): term added to denominator to improve numerical stability.
         maximize (bool): maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-2,
         amplifier: float = 0.02,
         weight_decay: float = 0.0,
@@ -399,7 +402,7 @@ class SignSGD(BaseOptimizer):
     """Compressed Optimisation for Non-Convex Problems.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         momentum (float): momentum factor (0.0 = SignSGD, >0 = Signum).
         weight_decay (float): weight decay (L2 penalty).
@@ -407,11 +410,12 @@ class SignSGD(BaseOptimizer):
         foreach (Optional[bool]): Whether to use foreach (multi-tensor) operations for speed.
             None means auto-detect based on device (True for CUDA, False otherwise).
         maximize (bool): maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         momentum: float = 0.9,
         weight_decay: float = 0.0,
@@ -528,18 +532,19 @@ class SGDSaI(BaseOptimizer):
     """No More Adam: Learning Rate Scaling at Initialization is All You Need.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         momentum (float): coefficients used for computing running averages of gradient.
         weight_decay (float): weight decay (L2 penalty).
         weight_decouple (bool): optimizer uses decoupled weight decay as in AdamW.
         eps (float): term added to denominator to improve numerical stability.
         maximize (bool): maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-2,
         momentum: float = 0.9,
         weight_decay: float = 1e-2,
@@ -665,7 +670,7 @@ class VSGD(BaseOptimizer):
     """Variational Stochastic Gradient Descent for Deep Neural Networks.
 
     Args:
-        params (Parameters): iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): learning rate.
         ghattg (float): prior variance ratio between ghat and g, Var(ghat_t-g_t)/Var(g_t-g_{t-1}).
         ps (float): prior strength.
@@ -675,11 +680,12 @@ class VSGD(BaseOptimizer):
         weight_decouple (bool): optimizer uses decoupled weight decay as in AdamW.
         eps (float): term added to denominator to improve numerical stability.
         maximize (bool): maximize the objective instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-1,
         ghattg: float = 30.0,
         ps: float = 1e-8,

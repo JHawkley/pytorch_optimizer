@@ -1,6 +1,6 @@
 [project]
 name = "pytorch_optimizer"
-version = "3.9.0"
+version = "3.10.0"
 description = "optimizer & lr scheduler & objective function collections in PyTorch"
 license = { text = "Apache-2.0" }
 readme = "README.md"
@@ -58,9 +58,9 @@ dependencies = [
 [dependency-groups]
 dev = [
     'black<25; python_version < "3.9"',
-    'black>=25,<26; python_version >= "3.9"',
-    'ruff>=0.14,<0.15',
-    'pyright==1.1.407',
+    'black<26; python_version >= "3.9"',
+    'ruff>=0.15,<0.16',
+    'pyright==1.1.408',
     'pytest<9; python_version < "3.10"',
     'pytest>=9,<10; python_version >= "3.10"',
     'pytest-cov<6; python_version < "3.9"',
@@ -102,9 +102,9 @@ select = [
 ]
 ignore = [
     "B905",
-    "D100", "D102", "D104", "D105", "D107", "D203", "D213", "D413",
+    "D100", "D102", "D104", "D105", "D107", "D203", "D213",
     "PLR0913", "PLR2004", "PLW2901",
-    "Q003", "ARG002", "RUF100",
+    "Q003", "ARG002",
     "TD003", "TC002", "TC006", "PT011",
 ]
 fixable = ["ALL"]
@@ -160,6 +160,12 @@ omit = [
     "./pytorch_optimizer/optimizer/demo.py",
     "./pytorch_optimizer/optimizer/rotograd.py",
 ]
+
+[tool.hatch.build.targets.wheel.force-include]
+"pytorch_optimizer/py.typed" = "pytorch_optimizer/py.typed"
+
+[tool.hatch.build.targets.sdist.force-include]
+"pytorch_optimizer/py.typed" = "pytorch_optimizer/py.typed"
 
 [build-system]
 requires = ["hatchling"]

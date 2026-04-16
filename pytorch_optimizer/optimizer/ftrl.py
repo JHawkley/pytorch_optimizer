@@ -2,25 +2,26 @@ import torch
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamGroup, ParamsT
 
 
 class FTRL(BaseOptimizer):
     """Follow The Regularized Leader.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         lr_power (float): Controls how the learning rate decreases during training. Use zero for a fixed learning rate.
         beta (float): Beta value as described in the paper.
         lambda_1 (float): L1 regularization parameter.
         lambda_2 (float): L2 regularization parameter.
         maximize (bool): Maximize the objective with respect to the params, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         lr_power: float = -0.5,
         beta: float = 0.0,

@@ -7,7 +7,7 @@ import torch
 from torch import nn
 from torch.optim import LBFGS, SGD, Adam, AdamW, NAdam, Optimizer, RMSprop
 
-from pytorch_optimizer.base.type import OPTIMIZER, Parameters
+from pytorch_optimizer.base.type import OptimizerType, ParamsT
 from pytorch_optimizer.optimizer.a2grad import A2Grad
 from pytorch_optimizer.optimizer.adabelief import AdaBelief
 from pytorch_optimizer.optimizer.adabound import AdaBound
@@ -105,6 +105,7 @@ from pytorch_optimizer.optimizer.sophia import SophiaH
 from pytorch_optimizer.optimizer.spam import SPAM, StableSPAM
 from pytorch_optimizer.optimizer.splus import SPlus
 from pytorch_optimizer.optimizer.srmm import SRMM
+from pytorch_optimizer.optimizer.sso import SpectralSphere
 from pytorch_optimizer.optimizer.swats import SWATS
 from pytorch_optimizer.optimizer.tam import TAM, AdaTAM
 from pytorch_optimizer.optimizer.tiger import Tiger
@@ -115,7 +116,7 @@ HAS_BNB: bool = find_spec('bitsandbytes') is not None
 HAS_Q_GALORE: bool = find_spec('q-galore-torch') is not None
 HAS_TORCHAO: bool = find_spec('torchao') is not None
 
-OPTIMIZER_LIST: List[OPTIMIZER] = [
+OPTIMIZER_LIST: List[OptimizerType] = [
     LBFGS,
     SGD,
     Adam,
@@ -235,8 +236,9 @@ OPTIMIZER_LIST: List[OPTIMIZER] = [
     Tiger,
     VSGD,
     Yogi,
+    SpectralSphere,
 ]
-OPTIMIZERS: Dict[str, OPTIMIZER] = {str(optimizer.__name__).lower(): optimizer for optimizer in OPTIMIZER_LIST}
+OPTIMIZERS: Dict[str, OptimizerType] = {str(optimizer.__name__).lower(): optimizer for optimizer in OPTIMIZER_LIST}
 
 BNB_OPTIMIZERS = (
     ('paged_ademamix8bit', 'PagedAdEMAMix8bit'),
@@ -266,7 +268,7 @@ BNB_OPTIMIZERS = (
 )
 
 
-def load_bnb_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
+def load_bnb_optimizer(optimizer: str) -> OptimizerType:  # pragma: no cover
     """Load bnb optimizer instance."""
     from bitsandbytes import optim  # noqa: PLC0415
 
@@ -277,7 +279,7 @@ def load_bnb_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
     raise NotImplementedError(f'not implemented optimizer {optimizer}')
 
 
-def load_q_galore_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
+def load_q_galore_optimizer(optimizer: str) -> OptimizerType:  # pragma: no cover
     """Load Q-GaLore optimizer instance."""
     import q_galore_torch  # noqa: PLC0415
 
@@ -287,7 +289,7 @@ def load_q_galore_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
     raise NotImplementedError(f'not implemented optimizer {optimizer}')
 
 
-def load_ao_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
+def load_ao_optimizer(optimizer: str) -> OptimizerType:  # pragma: no cover
     """Load TorchAO optimizer instance."""
     from torchao.prototype import low_bit_optim  # noqa: PLC0415
 
@@ -301,7 +303,7 @@ def load_ao_optimizer(optimizer: str) -> OPTIMIZER:  # pragma: no cover
     raise NotImplementedError(f'not implemented optimizer {optimizer}')
 
 
-def load_optimizer(optimizer: str) -> OPTIMIZER:
+def load_optimizer(optimizer: str) -> OptimizerType:
     """Load optimizers."""
     optimizer_name: str = optimizer.lower()
 
@@ -338,13 +340,16 @@ def create_optimizer(
 ) -> Optimizer:
     r"""Build optimizer.
 
-    :param model: nn.Module. model.
-    :param optimizer_name: str. name of optimizer.
-    :param lr: float. learning rate.
-    :param weight_decay: float. weight decay.
-    :param wd_ban_list: List[str]. weight decay ban list by layer.
-    :param use_lookahead: bool. use Lookahead.
-    :param use_orthograd: bool. use OrthoGrad.
+    Args:
+        model (nn.Module): model.
+        optimizer_name (str): optimizer name.
+        lr (float): learning rate.
+        weight_decay (float): weight decay.
+        wd_ban_list (List[str]): weight decay ban list by layer.
+        use_lookahead (bool): use Lookahead.
+        use_orthograd (bool): use OrthoGrad.
+        **kwargs (dict): optimizer parameters.
+
     """
     optimizer_name = optimizer_name.lower()
 
@@ -352,7 +357,7 @@ def create_optimizer(
         get_optimizer_parameters(model, weight_decay, wd_ban_list) if weight_decay > 0.0 else model.parameters()
     )
 
-    optimizer_class: OPTIMIZER = load_optimizer(optimizer_name)
+    optimizer_class: OptimizerType = load_optimizer(optimizer_name)
 
     if optimizer_name == 'alig':
         optimizer = optimizer_class(parameters, max_lr=lr, **kwargs)
@@ -387,16 +392,20 @@ def get_optimizer_parameters(
     model_or_parameter: Union[nn.Module, List],
     weight_decay: float,
     wd_ban_list: List[str] = ('bias', 'LayerNorm.bias', 'LayerNorm.weight'),
-) -> Parameters:
+) -> ParamsT:
     r"""Get optimizer parameters while filtering specified modules.
 
-    Notice that, You can also ban by a module name level (e.g. LayerNorm) if you pass nn.Module instance. You just only
-    need to input `LayerNorm` to exclude weight decay from the layer norm layer(s).
+    Notice that, You can also ban by a module name level (e.g. LayerNorm) if you pass nn.Module instance.
+    You just only need to input `LayerNorm` to exclude weight decay from the layer norm layer(s).
 
-    :param model_or_parameter: Union[nn.Module, List]. model or parameters.
-    :param weight_decay: float. weight_decay.
-    :param wd_ban_list: List[str]. ban list not to set weight decay.
-    :returns: PARAMETERS. new parameter list.
+    Args:
+        model_or_parameter (Union[nn.Module, List]): model or parameters.
+        weight_decay (float): weight decay.
+        wd_ban_list (List[str]): weight decay ban list.
+
+    Returns:
+        ParamsT: optimizer parameters.
+
     """
     banned_parameter_patterns: Set[str] = set()
 
@@ -436,8 +445,10 @@ def get_optimizer_parameters(
 def get_supported_optimizers(filters: Optional[Union[str, List[str]]] = None) -> List[str]:
     r"""Return list of available optimizer names, sorted alphabetically.
 
-    :param filters: Optional[Union[str, List[str]]]. wildcard filter string that works with fmatch.
-        if None, it will return the whole list.
+    Args:
+        filters (Optional[Union[str, List[str]]]): wildcard filter string that works with fmatch.
+            if None, it will return the whole list.
+
     """
     if filters is None:
         return sorted(OPTIMIZERS.keys())

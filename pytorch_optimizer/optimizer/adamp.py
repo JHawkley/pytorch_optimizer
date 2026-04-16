@@ -6,7 +6,7 @@ from torch.nn.functional import cosine_similarity
 
 from pytorch_optimizer.base.exception import NoSparseGradientError
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, Parameters, ParamGroup
+from pytorch_optimizer.base.type import Betas, Closure, Defaults, Loss, ParamGroup, ParamsT
 from pytorch_optimizer.optimizer.gradient_centralization import centralize_gradient
 
 
@@ -33,6 +33,7 @@ def cosine_similarity_by_view(
         y (torch.Tensor): Destination tensor.
         eps (float): Small constant epsilon added for numerical stability.
         view_func (Callable): Function defining the view (e.g., per-channel or per-layer).
+
     """
     x = view_func(x)
     y = view_func(y)
@@ -66,7 +67,7 @@ class SGDP(BaseOptimizer):
     """SGD + Slowing Down the Slowdown for Momentum Optimizers on Scale-invariant Weights.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         momentum (float): Momentum factor.
         dampening (float): Dampening for momentum.
@@ -79,11 +80,12 @@ class SGDP(BaseOptimizer):
         nesterov (bool): Enables Nesterov momentum.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         momentum: float = 0.0,
         dampening: float = 0.0,
@@ -201,7 +203,7 @@ class AdamP(BaseOptimizer):
     """Slowing Down the Slowdown for Momentum Optimizers on Scale-invariant Weights.
 
     Args:
-        params (Parameters): Iterable of parameters to optimize or dicts defining parameter groups.
+        params (ParamsT): Iterable of parameters to optimize or dicts defining parameter groups.
         lr (float): Learning rate.
         betas (Betas): Coefficients used for computing running averages of gradient and the squared Hessian trace.
         weight_decay (float): Weight decay (L2 penalty).
@@ -213,11 +215,12 @@ class AdamP(BaseOptimizer):
         nesterov (bool): Enables Nesterov momentum.
         eps (float): Term added to the denominator to improve numerical stability.
         maximize (bool): Maximize the objective with respect to the parameters, instead of minimizing.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         lr: float = 1e-3,
         betas: Betas = (0.9, 0.999),
         weight_decay: float = 0.0,
@@ -326,7 +329,7 @@ class AdamP(BaseOptimizer):
                 exp_avg.mul_(beta1).add_(s_grad, alpha=1.0 - beta1)
                 exp_avg_sq.mul_(beta2).addcmul_(grad, grad, value=1.0 - beta2)
 
-                inv_de_nom = exp_avg_sq.rsqrt().add_(group['eps']).mul_(bias_correction2_sq)
+                inv_de_nom = exp_avg_sq.sqrt().add_(group['eps']).reciprocal_().mul_(bias_correction2_sq)
 
                 perturb = exp_avg.clone()
 
@@ -351,7 +354,7 @@ class AdamP(BaseOptimizer):
 
                 self.apply_weight_decay(
                     p=p,
-                    grad=None,
+                    grad=grad,
                     lr=group['lr'],
                     weight_decay=group['weight_decay'],
                     weight_decouple=group['weight_decouple'],

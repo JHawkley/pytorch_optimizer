@@ -13,11 +13,11 @@ from torch.nn.modules.batchnorm import _BatchNorm
 from torch.nn.utils import clip_grad_norm_
 from torch.optim.optimizer import Optimizer
 
-from pytorch_optimizer.base.type import Closure, Loss, Parameters
+from pytorch_optimizer.base.type import Closure, Loss, ParamsT
 
 
 def parse_pytorch_version(version_string: str) -> List[int]:
-    """Parse Pytorch version."""
+    """Parse a PyTorch version string."""
     match = re.match(r'(\d+\.\d+\.\d+)', version_string)
     if not match:
         raise ValueError(f'invalid version string format: {version_string}')
@@ -26,7 +26,7 @@ def parse_pytorch_version(version_string: str) -> List[int]:
 
 
 def compare_versions(v1: str, v2: str) -> bool:
-    """Compare two Pytorch versions."""
+    """Compare two PyTorch versions."""
     return parse_pytorch_version(v1) >= parse_pytorch_version(v2)
 
 
@@ -61,17 +61,18 @@ class CPUOffloadOptimizer:  # pragma: no cover
     Reference: https://github.com/pytorch/ao/blob/main/torchao/prototype/low_bit_optim/cpu_offload.py
 
     Args:
-        params (Parameters): A list of parameters or parameter groups.
+        params (ParamsT): A list of parameters or parameter groups.
         optimizer_class (Type[torch.optim.Optimizer]): Constructor of the base optimizer.
             Defaults to :class:`torch.optim.AdamW`.
         offload_gradients (bool, optional): Free GPU gradients once they are moved to CPU.
             Not compatible with gradient accumulation. Defaults to False.
         kwargs (Dict): Other keyword arguments to be passed to the base optimizer, e.g. `lr`, `weight_decay`.
+
     """
 
     def __init__(
         self,
-        params: Parameters,
+        params: ParamsT,
         optimizer_class: Type[Optimizer] = torch.optim.AdamW,
         *,
         offload_gradients: bool = False,
@@ -179,6 +180,7 @@ class StochasticAccumulator:
 
             optimizer.step()
             optimizer.zero_grad()
+
     """
 
     @staticmethod
@@ -211,7 +213,7 @@ class StochasticAccumulator:
         ]
 
 
-def is_valid_parameters(parameters: Parameters) -> bool:
+def is_valid_parameters(parameters: ParamsT) -> bool:
     """Check where the parameters are valid."""
     return isinstance(parameters, (list, tuple)) and len(parameters) > 0 and isinstance(parameters[0], dict)
 
@@ -233,6 +235,7 @@ def normalize_gradient(x: torch.Tensor, use_channels: bool = False, epsilon: flo
         x (torch.Tensor): Gradient tensor to normalize.
         use_channels (bool): If True, perform channel-wise normalization.
         epsilon (float): Small constant added for numerical stability.
+
     """
     size: int = x.dim()
     if size > 1 and use_channels:
@@ -244,7 +247,7 @@ def normalize_gradient(x: torch.Tensor, use_channels: bool = False, epsilon: flo
 
 
 def clip_grad_norm(
-    parameters: Union[Parameters, torch.Tensor],
+    parameters: Union[ParamsT, torch.Tensor],
     max_norm: float = 0.0,
     sync: bool = False,
 ) -> Union[torch.Tensor, float]:
@@ -254,7 +257,7 @@ def clip_grad_norm(
     since each worker only stores their shard of the gradients.
 
     Args:
-        parameters (Parameters): Parameters whose gradients we wish to clip.
+        parameters (ParamsT): ParamsT whose gradients we wish to clip.
         max_norm (float): Maximum norm we wish the gradients to have. If non-positive,
             then we will not perform clipping.
         sync (bool): Boolean indicating whether we should aggregate across the distributed group.
@@ -262,9 +265,10 @@ def clip_grad_norm(
 
     Returns:
         float: The gradient norm across all parameters, before clipping.
+
     """
     if parameters is None:
-        raise ValueError('Parameters cannot be None.')
+        raise ValueError('ParamsT cannot be None.')
 
     if isinstance(parameters, torch.Tensor):
         parameters = [parameters]
@@ -359,6 +363,7 @@ def reg_noise(
         lr (float): Learning rate.
         eta (float): Eta parameter controlling auxiliary guiding variable.
         temperature (float): Temperature parameter for sampling.
+
     """
     reg_coef: float = 0.5 / (eta * num_data)
     noise_coef: float = math.sqrt(2.0 / lr / num_data * temperature)
@@ -385,6 +390,7 @@ def copy_stochastic(target: torch.Tensor, source: torch.Tensor) -> None:
     Args:
         target (torch.Tensor): A tensor in bfloat16 format to copy to.
         source (torch.Tensor): A tensor in float32 format to copy from.
+
     """
     result = torch.randint_like(
         source,
