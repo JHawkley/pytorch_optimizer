@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 from pytorch_optimizer.base.optimizer import BaseOptimizer
-from pytorch_optimizer.base.type import Closure, Defaults, Loss, Parameters, ParamGroup, State
+from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamsT, ParamGroup, State, OptimizerType
 from pytorch_optimizer.optimizer.orthograd import OrthoGrad
 from pytorch_optimizer.optimizer.lookahead import Lookahead
 
@@ -31,7 +31,7 @@ class KohyaHelper(BaseOptimizer):
     and then passing them on to `create_optimizer` itself, wrapping the resulting optimizer.
 
     Args:
-        params (Parameters|Module): A Torch module, an iterable of parameters to optimize, or
+        params (ParamsT|Module): A Torch module, an iterable of parameters to optimize, or
             dicts defining parameter groups.
         lr (float): Learning rate.
         optimizer_name (str): Name of the optimizer; required.
@@ -41,14 +41,14 @@ class KohyaHelper(BaseOptimizer):
 
     def __init__(
         self,
-        params: Union[Parameters, nn.Module],
+        params: Union[ParamsT, nn.Module],
         lr: float = 1e-3,
         optimizer_name: Optional[str] = None,
         use_lookahead: bool = False,
         use_orthograd: bool = False,
         **kwargs,
     ) -> None:
-        from pytorch_optimizer.optimizer import create_optimizer, load_optimizer, OPTIMIZER
+        from pytorch_optimizer.optimizer import create_optimizer, load_optimizer
 
         if optimizer_name is None:
             raise ValueError(f'optimizer_name must be provided')
@@ -73,7 +73,7 @@ class KohyaHelper(BaseOptimizer):
             self._optimizer_step_pre_hooks: Dict[int, Callable] = {}
             self._optimizer_step_post_hooks: Dict[int, Callable] = {}
 
-            optimizer_class: OPTIMIZER = load_optimizer(optimizer_name)
+            optimizer_class: OptimizerType = load_optimizer(optimizer_name)
 
             if optimizer_name == 'alig':
                 optimizer = optimizer_class(params, max_lr=lr, **kwargs)
