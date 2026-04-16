@@ -83,8 +83,12 @@ class Amos(BaseOptimizer):
 
             if len(state) == 0:
                 # For scalar parameters (0-dim), match parameter shape; otherwise use shape (1,)
-                state['exp_avg_sq'] = torch.zeros_like(p) if len(p.shape) == 0 else torch.zeros((1,), dtype=p.dtype, device=p.device)
-                state['decay'] = torch.zeros_like(p) if len(p.shape) == 0 else torch.zeros((1,), dtype=p.dtype, device=p.device)
+                if len(p.shape) == 0:
+                    state['exp_avg_sq'] = torch.zeros_like(p)
+                    state['decay'] = torch.zeros_like(p)
+                else:
+                    state['exp_avg_sq'] = torch.zeros((1,), dtype=p.dtype, device=p.device)
+                    state['decay'] = torch.zeros((1,), dtype=p.dtype, device=p.device)
                 if group['momentum'] > 0.0:
                     state['exp_avg'] = torch.zeros_like(p)
 
@@ -97,9 +101,8 @@ class Amos(BaseOptimizer):
     @staticmethod
     def get_scale(p: torch.Tensor) -> float:
         r"""Get expected scale for model weights."""
-        if len(p.shape) == 0:  # For scalar values.
-            return 1.0
-        if len(p.shape) == 1:
+        # Scalar parameters (0-dim) can be seen as a 1-element, 1D matrix.
+        if len(p.shape) <= 1:
             return 0.5
         if len(p.shape) == 2:
             return math.sqrt(2 / p.size(1))
