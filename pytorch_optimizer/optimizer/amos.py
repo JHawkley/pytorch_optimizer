@@ -101,8 +101,9 @@ class Amos(BaseOptimizer):
     @staticmethod
     def get_scale(p: torch.Tensor) -> float:
         r"""Get expected scale for model weights."""
-        # Scalar parameters (0-dim) can be seen as a 1-element, 1D matrix.
-        if len(p.shape) <= 1:
+        if len(p.shape) == 0:  # Scalar parameter.
+            return 1
+        if len(p.shape) == 1:
             return 0.5
         if len(p.shape) == 2:
             return math.sqrt(2 / p.size(1))
