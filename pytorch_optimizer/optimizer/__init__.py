@@ -46,11 +46,13 @@ from pytorch_optimizer.optimizer.conda import Conda
 from pytorch_optimizer.optimizer.dadapt import DAdaptAdaGrad, DAdaptAdam, DAdaptAdan, DAdaptLion, DAdaptSGD
 from pytorch_optimizer.optimizer.demo import DeMo
 from pytorch_optimizer.optimizer.diffgrad import DiffGrad
+from pytorch_optimizer.optimizer.dual_adam import DualAdam
 from pytorch_optimizer.optimizer.emonavi import EmoFact, EmoLynx, EmoNavi
 from pytorch_optimizer.optimizer.exadam import EXAdam
 from pytorch_optimizer.optimizer.experimental.ranger25 import Ranger25
 from pytorch_optimizer.optimizer.fadam import FAdam
 from pytorch_optimizer.optimizer.fira import Fira
+from pytorch_optimizer.optimizer.flash_adamw import FlashAdamW
 from pytorch_optimizer.optimizer.focus import FOCUS
 from pytorch_optimizer.optimizer.fp16 import DynamicLossScaler, SafeFP16Optimizer
 from pytorch_optimizer.optimizer.fromage import Fromage
@@ -68,6 +70,7 @@ from pytorch_optimizer.optimizer.lars import LARS
 from pytorch_optimizer.optimizer.lion import Lion
 from pytorch_optimizer.optimizer.lomo import LOMO, AdaLOMO
 from pytorch_optimizer.optimizer.lookahead import Lookahead
+from pytorch_optimizer.optimizer.lora_rite import LoRARite
 from pytorch_optimizer.optimizer.madgrad import MADGRAD
 from pytorch_optimizer.optimizer.mars import MARS
 from pytorch_optimizer.optimizer.msvag import MSVAG
@@ -87,6 +90,7 @@ from pytorch_optimizer.optimizer.racs import RACS, Alice
 from pytorch_optimizer.optimizer.radam import RAdam
 from pytorch_optimizer.optimizer.ranger import Ranger
 from pytorch_optimizer.optimizer.ranger21 import Ranger21
+from pytorch_optimizer.optimizer.rose import ROSE
 from pytorch_optimizer.optimizer.rotograd import RotoGrad
 from pytorch_optimizer.optimizer.sam import BSAM, GSAM, SAM, WSAM, FriendlySAM, LookSAM
 from pytorch_optimizer.optimizer.schedulefree import (
@@ -174,6 +178,7 @@ OPTIMIZER_LIST: List[OptimizerType] = [
     DeMo,
     DiffGrad,
     DistributedMuon,
+    DualAdam,
     EXAdam,
     EmoFact,
     EmoLynx,
@@ -182,6 +187,7 @@ OPTIMIZER_LIST: List[OptimizerType] = [
     FOCUS,
     FTRL,
     Fira,
+    FlashAdamW,
     Fromage,
     GaLore,
     Grams,
@@ -191,6 +197,7 @@ OPTIMIZER_LIST: List[OptimizerType] = [
     Kron,
     LARS,
     LOMO,
+    LoRARite,
     LaProp,
     Lamb,
     Lion,
@@ -211,6 +218,7 @@ OPTIMIZER_LIST: List[OptimizerType] = [
     Ranger,
     Ranger21,
     Ranger25,
+    ROSE,
     SCION,
     SCIONLight,
     SGDP,

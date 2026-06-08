@@ -17,6 +17,7 @@ from pytorch_optimizer.optimizer import (
     PNM,
     QHM,
     RACS,
+    ROSE,
     SCION,
     SGDP,
     SGDW,
@@ -68,12 +69,14 @@ from pytorch_optimizer.optimizer import (
     DAdaptLion,
     DAdaptSGD,
     DiffGrad,
+    DualAdam,
     EmoFact,
     EmoLynx,
     EmoNavi,
     EXAdam,
     FAdam,
     Fira,
+    FlashAdamW,
     Fromage,
     GaLore,
     Grams,
@@ -84,6 +87,7 @@ from pytorch_optimizer.optimizer import (
     Lamb,
     LaProp,
     Lion,
+    LoRARite,
     Muon,
     Nero,
     NovoGrad,
@@ -151,6 +155,7 @@ COMPLEX_OPTIMIZERS: frozenset = frozenset(
         'apollo',
         'avagrad',
         'diffgrad',
+        'dualadam',
         'exadam',
         'focus',
         'fromage',
@@ -257,15 +262,18 @@ BETA_OPTIMIZER_NAMES: frozenset = frozenset(
         'stableadamw',
         'adammini',
         'adamg',
+        'dualadam',
         'ademamix',
         'soap',
         'adamuon',
         'laprop',
         'apollo',
+        'lorarite',
         'mars',
         'adatam',
         'focus',
         'exadam',
+        'flashadamw',
     }
 )
 
@@ -319,6 +327,7 @@ SKIP_EPSILON: frozenset = frozenset(
         'scionlight',
         'lbfgs',
         'spectralsphere',
+        'rose',
     }
 )
 
@@ -412,7 +421,7 @@ SKIP_COMPLEX_NOT_SUPPORTED: frozenset = frozenset(
     }
 )
 
-SKIP_BF16_OPTIMIZERS: frozenset = frozenset({'adai', 'prodigy', 'nero'})
+SKIP_BF16_OPTIMIZERS: frozenset = frozenset({'adai', 'prodigy', 'nero', 'lorarite'})
 
 CAWR_RECIPES: Tuple[Tuple, ...] = (
     (
@@ -531,7 +540,7 @@ BINARY_DICE_RECIPES: Tuple[Tuple, ...] = (
 
 PULLBACK_MOMENTUM: Tuple[str, ...] = ('none', 'reset', 'pullback')
 
-OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
+OPTIMIZERS: List[Tuple[Any, Dict[str, Any], int]] = [
     (build_lookahead, {'lr': 5e-1, 'weight_decay': 1e-3}, 5),
     (build_orthograd, {'lr': 5e-1, 'weight_decay': 1e-3}, 10),
     (build_schedulefree, {'lr': 5e-1, 'weight_decay': 1e-3}, 5),
@@ -556,6 +565,7 @@ OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
     (DiffGrad, {'lr': 5e-2, 'weight_decay': 1e-3}, 5),
     (DiffGrad, {'lr': 5e-2, 'weight_decay': 1e-3, 'ams_bound': True}, 5),
     (DiffGrad, {'lr': 5e-1, 'weight_decay': 1e-3, 'rectify': True}, 5),
+    (DualAdam, {'lr': 5e-1, 'weight_decay': 1e-3, 'switch_rate': 0.25}, 5),
     (Lamb, {'lr': 1e-1, 'weight_decay': 1e-3}, 5),
     (Lamb, {'lr': 1e-1, 'weight_decay': 1e-3, 'pre_norm': True, 'max_grad_norm': 0.0}, 5),
     (Lamb, {'lr': 5e-2, 'weight_decay': 1e-3, 'grad_averaging': False}, 5),
@@ -747,6 +757,7 @@ OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
     (ApolloDQN, {'lr': 5e-1, 'weight_decay': 1e-3, 'weight_decay_type': 'stable', 'warmup_steps': 0}, 50),
     (NovoGrad, {'lr': 5e-1, 'weight_decay': 1e-3, 'grad_averaging': True}, 5),
     (Lion, {'lr': 5e-1, 'weight_decay': 1e-3}, 5),
+    (LoRARite, {'lr': 3e-2, 'betas': (0.9, 0.999), 'clip_unmagnified_grad': 1.0}, 10),
     (Lion, {'lr': 5e-1, 'weight_decay': 1e-3, 'weight_decouple': False}, 5),
     (Lion, {'lr': 5e-1, 'weight_decay': 1e-3, 'use_gc': True}, 10),
     (AliG, {'max_lr': 5e-1, 'momentum': 0.9}, 5),
@@ -852,6 +863,7 @@ OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
     (ScheduleFreeAdamW, {'lr': 1e0, 'weight_decay': 1e-3, 'decoupling_c': 200}, 5),
     (ScheduleFreeRAdam, {'lr': 1e2, 'weight_decay': 1e-3}, 20),
     (FAdam, {'lr': 1e0, 'weight_decay': 1e-3}, 5),
+    (FlashAdamW, {'lr': 5e-1, 'weight_decay': 1e-3, 'quantize': False}, 5),
     (GrokFastAdamW, {'lr': 5e0, 'weight_decay': 1e-3, 'grokfast_after_step': 1}, 5),
     (Kate, {'lr': 5e-2}, 10),
     (StableAdamW, {'lr': 1e0}, 5),
@@ -939,6 +951,12 @@ OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
     (BCOS, {'lr': 1e0, 'mode': 'c', 'simple_cond': True}, 5),
     (Ano, {'lr': 1e0, 'weight_decay': 1e-3, 'logarithmic_schedule': True}, 5),
     (SpectralSphere, {'lr': 5e-1, 'momentum': 0.95, 'weight_decay': 1e-3, 'msign_steps': 8}, 5),
+    (ROSE, {'lr': 1e0, 'weight_decay': 1e-3}, 5),
+    (ROSE, {'lr': 1e0, 'weight_decay': 1e-3, 'wd_schedule': 1e0}, 5),
+    (ROSE, {'lr': 7.5e-1, 'weight_decay': 1e-3, 'stabilize': False}, 10),
+    (DualAdam, {'lr': 1e0, 'weight_decay': 1e-3, 'weight_decouple': True, 'switch_rate': 0.5}, 5),
+    (LoRARite, {'lr': 5e-1, 'weight_decay': 1e-3, 'weight_decouple': True, 'update_capping': 0.1}, 5),
+    (FlashAdamW, {'lr': 5e-1, 'weight_decay': 1e-3, 'check_numerics': True, 'master_weight_bits': None}, 5),
 ]
 
 ADANORM_SUPPORTED_OPTIMIZERS: List[Tuple[Any, Dict[str, Union[float, bool, int]], int]] = [
