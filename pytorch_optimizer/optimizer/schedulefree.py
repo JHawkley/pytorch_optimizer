@@ -575,11 +575,13 @@ class ScheduleFreeWrapper(BaseOptimizer):
         return self.optimizer.add_param_group(param_group)
 
     def state_dict(self) -> State:
-        return {'schedulefree_state': self.state, 'base_optimizer': self.optimizer.state_dict()}
+        schedulefree_state: State = {p: dict(param_state) for p, param_state in self.state.items()}
+        return {'schedulefree_state': schedulefree_state, 'base_optimizer': self.optimizer.state_dict()}
 
     def load_state_dict(self, state: State) -> None:
         r"""Load state."""
-        self.state = state['schedulefree_state']
+        schedulefree_state = state['schedulefree_state']
+        self.state = defaultdict(dict, {p: dict(param_state) for p, param_state in schedulefree_state.items()})
         self.optimizer.load_state_dict(state['base_optimizer'])
 
     def zero_grad(self, set_to_none: bool = True) -> None:
