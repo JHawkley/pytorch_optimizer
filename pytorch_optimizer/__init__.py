@@ -147,6 +147,7 @@ from pytorch_optimizer.optimizer import (
     LoRARite,
     Lookahead,
     LookSAM,
+    Magma,
     Muon,
     NAdam,
     Nero,

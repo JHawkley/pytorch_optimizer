@@ -458,7 +458,7 @@ class SignSGD(BaseOptimizer):
 
             state = self.state[p]
 
-            if group['momentum'] > 0.0:
+            if group['momentum'] > 0.0 and 'momentum_buffer' not in state:
                 state['momentum_buffer'] = torch.zeros_like(p)
 
     def _can_use_foreach(self, group: ParamGroup) -> bool:
@@ -479,6 +479,15 @@ class SignSGD(BaseOptimizer):
         if self.maximize:
             torch._foreach_neg_(grads)
 
+        self.apply_weight_decay_foreach(
+            params=params,
+            grads=grads,
+            lr=lr,
+            weight_decay=group['weight_decay'],
+            weight_decouple=group['weight_decouple'],
+            fixed_decay=False,
+        )
+
         torch._foreach_lerp_(momentum_buffers, grads, weight=1.0 - group['momentum'])
 
         updates = [buf.sign() for buf in momentum_buffers]
@@ -495,11 +504,20 @@ class SignSGD(BaseOptimizer):
 
             self.maximize_gradient(grad, maximize=self.maximize)
 
+            self.apply_weight_decay(
+                p,
+                grad=grad,
+                lr=group['lr'],
+                weight_decay=group['weight_decay'],
+                weight_decouple=group['weight_decouple'],
+                fixed_decay=False,
+            )
+
             state = self.state[p]
 
             if momentum > 0.0:
                 buf = state['momentum_buffer']
-                buf.mul_(momentum).add_(grad, alpha=1.0 - momentum)
+                buf.lerp_(grad, weight=1.0 - momentum)
             else:
                 buf = grad
 
