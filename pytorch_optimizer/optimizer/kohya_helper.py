@@ -7,6 +7,7 @@ import torch.nn as nn
 from pytorch_optimizer.base.optimizer import BaseOptimizer
 from pytorch_optimizer.base.type import Closure, Defaults, Loss, ParamsT, ParamGroup, State, OptimizerType
 from pytorch_optimizer.optimizer.orthograd import OrthoGrad
+from pytorch_optimizer.optimizer.magma import Magma
 from pytorch_optimizer.optimizer.lookahead import Lookahead
 from pytorch_optimizer.optimizer.schedulefree import ScheduleFreeWrapper
 
@@ -49,6 +50,7 @@ class KohyaHelper(BaseOptimizer):
         optimizer_name: Optional[str] = None,
         use_lookahead: bool = False,
         use_orthograd: bool = False,
+        use_magma: bool = False,
         use_schedulefree: bool = False,
         schedulefree_momentum: float = 0.9,
         **kwargs,
@@ -89,6 +91,9 @@ class KohyaHelper(BaseOptimizer):
                 # Make sure the explicit `momentum` is not accidentally overridden by `kwargs`.
                 filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'momentum'}
                 optimizer = ScheduleFreeWrapper(optimizer, momentum=schedulefree_momentum, **filtered_kwargs)
+
+            if use_magma:
+                optimizer = Magma(optimizer, **kwargs)
 
             if use_orthograd:
                 optimizer = OrthoGrad(optimizer, **kwargs)
